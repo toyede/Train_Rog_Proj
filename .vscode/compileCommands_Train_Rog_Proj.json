@@ -1,0 +1,74 @@
+[
+	{
+		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\BackGroundManager.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Unreal_Projects\\Train_Rog_Proj\\.vscode\\compileCommands_Train_Rog_Proj\\Train_Rog_Proj.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\BackGroundManager.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Unreal_Projects\\Train_Rog_Proj\\.vscode\\compileCommands_Train_Rog_Proj\\Train_Rog_Proj.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\BackGroundObjectBase.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Unreal_Projects\\Train_Rog_Proj\\.vscode\\compileCommands_Train_Rog_Proj\\Train_Rog_Proj.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\BackGroundObjectBase.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Unreal_Projects\\Train_Rog_Proj\\.vscode\\compileCommands_Train_Rog_Proj\\Train_Rog_Proj.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\Test.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Unreal_Projects\\Train_Rog_Proj\\.vscode\\compileCommands_Train_Rog_Proj\\Train_Rog_Proj.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\Test.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Unreal_Projects\\Train_Rog_Proj\\.vscode\\compileCommands_Train_Rog_Proj\\Train_Rog_Proj.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\Train_Rog_Proj.Build.cs",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Unreal_Projects\\Train_Rog_Proj\\.vscode\\compileCommands_Train_Rog_Proj\\Train_Rog_Proj.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\Train_Rog_Proj.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Unreal_Projects\\Train_Rog_Proj\\.vscode\\compileCommands_Train_Rog_Proj\\Train_Rog_Proj.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\Train_Rog_Proj.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Unreal_Projects\\Train_Rog_Proj\\.vscode\\compileCommands_Train_Rog_Proj\\Train_Rog_Proj.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Source"
+	}
+]
