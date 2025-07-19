@@ -3,22 +3,23 @@
 
 #include "BackGroundObjectBase.h"
 
-// Sets default values
 ABackGroundObjectBase::ABackGroundObjectBase()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
 }
 
-// Called when the game starts or when spawned
 void ABackGroundObjectBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	// 액터의 바운딩 박스(경계) 구해서 길이 측정
+    GetActorBounds(true, Origin, BoxExtent); // true: 전체 컴포넌트 포함
+
+    // X방향(가로, 일반적으로 길이로 사용)의 실제 크기 저장(단위 cm)
+    MeasuredLength = BoxExtent.X * 2.0f;
 }
 
-// Called every frame
 void ABackGroundObjectBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);

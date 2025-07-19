@@ -13,15 +13,12 @@ class TRAIN_ROG_PROJ_API ABackGroundManager : public AActor
 	GENERATED_BODY()
 	
 public:	
-	// Sets default values for this actor's properties
 	ABackGroundManager();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 protected:
@@ -29,13 +26,17 @@ protected:
 	UPROPERTY(EditAnywhere)
     TArray<ABackGroundObjectBase*> BackGroundObjects;
 
-	// 최대 시야 거리
-	UPROPERTY(EditAnywhere)
-    float ObjectLength = 1000.f;
-
 	// 기차나 카메라
     UPROPERTY(EditAnywhere)
     AActor* ReferenceActor;
+
+	// 시야거리
+    UPROPERTY(EditAnywhere)
+    float sight = 0.f;
+
+	// 배경 이동 속도
+    UPROPERTY(EditAnywhere, Category="Movement")
+    float BackgroundMoveSpeed = 1000.f; // 예시값
 
     void CheckAndRecycleObjects();
 };

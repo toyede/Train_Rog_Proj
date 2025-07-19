@@ -3,25 +3,30 @@
 
 #include "BackGroundManager.h"
 
-// Sets default values
 ABackGroundManager::ABackGroundManager()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 }
 
-// Called when the game starts or when spawned
 void ABackGroundManager::BeginPlay()
 {
 	Super::BeginPlay();
 	
 }
 
-// Called every frame
 void ABackGroundManager::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+    // 모든 배경 오브젝트를 -X 방향(뒤)으로 이동
+    for (auto* Object : BackGroundObjects)
+    {
+        FVector NewLoc = Object->GetActorLocation();
+        NewLoc.X -= BackgroundMoveSpeed * DeltaTime;
+        Object->SetObjectLocation(NewLoc);
+    }
+    
 	CheckAndRecycleObjects();
 }
 
@@ -33,25 +38,29 @@ void ABackGroundManager::CheckAndRecycleObjects()
 		return;
 	}
 
-	// 기준 엑터(기차)의 X좌표를 저장
+	// 기준이 되는 X좌표 (항상 고정)
     float RefX = ReferenceActor->GetActorLocation().X;
 
-    for (auto* Object : BackGroundObjects) // BackgroundObjects의 배열에 있는 요소 하나씩 빼와서
+    for (auto* Object : BackGroundObjects)
     {
-        if (Object->GetActorLocation().X < RefX - ObjectLength) // 레퍼런스 액터의 위치가 특정 임계점을 벗어나면
+        float ObjectLength = Object->MeasuredLength;
+        sight = ObjectLength*2;
+        
+        // 오브젝트가 화면 뒤쪽으로 충분히 벗어나면
+        if (Object->GetActorLocation().X < RefX - ObjectLength - sight)
         {
-			// 다른 오브젝트들 중 가장 앞 위치 (FLT_MAX는 무한대를 의미)
+            // 가장 앞쪽(오른쪽) 오브젝트의 X값 찾기 (본인 제외)
             float MaxX = -FLT_MAX;
+            for (auto* Other : BackGroundObjects)
+            {
+                if (Other != Object)
+                {
+                    MaxX = FMath::Max(MaxX, Other->GetActorLocation().X);
+                }
+            }
 
-            for (auto* Other : BackGroundObjects) // BackgroundObjects의 배열에 있는 요소 하나씩 빼와서
-			{
-                if (Other != Object) // 나를 제외한 것들에 대해
-				{
-                    MaxX = FMath::Max(MaxX, Other->GetActorLocation().X); // 가장 X축으로 가장 큰 값을 가진 요소를 찾아옴
-				}
-			}
-
-            FVector NewLoc = Object->GetActorLocation(); // 새로 배치할 위치
+            // 해당 위치 앞으로 텔레포트(순환)
+            FVector NewLoc = Object->GetActorLocation();
             NewLoc.X = MaxX + ObjectLength;
             Object->SetObjectLocation(NewLoc);
         }
