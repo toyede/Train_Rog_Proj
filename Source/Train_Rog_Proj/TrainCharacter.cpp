@@ -17,7 +17,11 @@ ATrainCharacter::ATrainCharacter()
     CameraBoom->SetupAttachment(RootComponent);
     CameraBoom->TargetArmLength = 300.0f; // 캐릭터와 카메라 거리 조절
 	CameraBaseLength = CameraBoom->TargetArmLength; // 기본 카메라 길이 저장
-    CameraBoom->bUsePawnControlRotation = true; // 컨트롤러 기준으로 회전
+    //CameraBoom->bUsePawnControlRotation = true; // 컨트롤러 기준으로 회전
+    CameraBoom->bUsePawnControlRotation = false; // 컨트롤러 회전 무시
+    CameraBoom->bInheritPitch = true;
+    CameraBoom->bInheritYaw = true;
+    CameraBoom->bInheritRoll = true;
 
     // Camera 생성 및 Spring Arm에 부착
     FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -32,8 +36,8 @@ ATrainCharacter::ATrainCharacter()
     CrouchCameraOffset = DefaultCameraOffset + FVector(0.f, 0.f, -30.f);
 
 	// 캐릭터 이동 설정
-    bUseControllerRotationYaw = false;
-    bUseControllerRotationPitch = false;
+    bUseControllerRotationPitch = true;
+    bUseControllerRotationYaw = true;
     bUseControllerRotationRoll = false;  // 마우스, 카메라 회전이 캐릭터(몸) 회전에 영향 X
     GetCharacterMovement()->bOrientRotationToMovement = false;  // 이동하면 그 방향으로 몸이 회전
     GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);  // 회전 속도(조정 가능)
@@ -50,8 +54,7 @@ void ATrainCharacter::BeginPlay()
         // Enhanced Input Subsystem 가져오기 (로컬 플레이어 전용)
         if (ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
         {
-            UEnhancedInputLocalPlayerSubsystem* Subsystem =
-                ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer);
+            UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer);
 
             // Mapping Context가 에셋에 할당되어 있다면 등록
             if (Subsystem && DefaultMappingContext)
@@ -60,6 +63,12 @@ void ATrainCharacter::BeginPlay()
                 Subsystem->AddMappingContext(DefaultMappingContext, 0);
             }
         }
+    }
+    if (Controller)
+    {
+        // 컨트롤러의 회전값을 초기값 (Pitch: 0, Yaw: 0, Roll: 0)으로 설정합니다.
+        // 이렇게 하면 게임 시작 시 카메라가 정면을 바라보게 됩니다.
+        Controller->SetControlRotation(FRotator(0.f, 0.f, 0.f));
     }
 }
 
@@ -181,7 +190,7 @@ void ATrainCharacter::ZoomIn()
 {
     // 카메라 줌 인
 	CameraBaseLength = CameraBoom->TargetArmLength;
-	CameraBoom->TargetArmLength = -200.0f; // 원하는 줌 인 길이로 설정
+	CameraBoom->TargetArmLength = -100.0f; // 원하는 줌 인 길이로 설정
 }
 void ATrainCharacter::ZoomOut()
 {
@@ -201,16 +210,26 @@ void ATrainCharacter::StopZoom()
 
 void ATrainCharacter::Look(const FInputActionValue& Value)
 {
-    // 입력 값이 Vector2D 형식이라고 가정
     FVector2D LookAxis = Value.Get<FVector2D>();
-    
-    // 감도(필요 시 Project Settings 등에서 변수로)
+
     float YawSensitivity = 1.0f;
     float PitchSensitivity = 1.0f;
 
-    // 카메라 회전
-    AddControllerYawInput(LookAxis.X);
-    AddControllerPitchInput(LookAxis.Y);
-}
+    // Yaw 회전은 그대로 적용
+    AddControllerYawInput(LookAxis.X * YawSensitivity);
 
+    // 현재 컨트롤러 회전값
+    FRotator ControlRot = Controller->GetControlRotation();
+
+    // 새로운 Pitch 계산
+    float NewPitch = ControlRot.Pitch + LookAxis.Y * PitchSensitivity * -1.0f;
+
+    // 언리얼에서 Pitch는 360도 기반으로 270도 이상은 음수방향을 의미함
+    // 따라서 ClampAngle 사용 (혹은 직접 범위 제한)
+    NewPitch = FMath::ClampAngle(NewPitch, -45.0f, 45.0f);
+
+    // 컨트롤러 회전값 갱신
+    ControlRot.Pitch = NewPitch;
+    Controller->SetControlRotation(ControlRot);
+}
 
