@@ -17,12 +17,12 @@ ATrainCharacter::ATrainCharacter()
     CameraBoom->SetupAttachment(RootComponent);
     CameraBoom->TargetArmLength = 300.0f; // 캐릭터와 카메라 거리 조절
 	CameraBaseLength = CameraBoom->TargetArmLength; // 기본 카메라 길이 저장
-    CameraBoom->bUsePawnControlRotation = false; // 컨트롤러 기준으로 회전
+    CameraBoom->bUsePawnControlRotation = true; // 컨트롤러 기준으로 회전
 
     // Camera 생성 및 Spring Arm에 부착
     FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
     FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-    FollowCamera->bUsePawnControlRotation = true; // 카메라는 직접 회전X
+    FollowCamera->bUsePawnControlRotation = false; // 카메라는 직접 회전X
 
     // 기본 속도 기억
     NormalWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
