@@ -191,11 +191,13 @@ void ATrainCharacter::ZoomIn()
     // Ä«¸Þ¶ó ÁÜ ÀÎ
 	CameraBaseLength = CameraBoom->TargetArmLength;
 	CameraBoom->TargetArmLength = -100.0f; // ¿øÇÏ´Â ÁÜ ÀÎ ±æÀÌ·Î ¼³Á¤
+    bIsZooming = true;
 }
 void ATrainCharacter::ZoomOut()
 {
     // Ä«¸Þ¶ó ÁÜ ¾Æ¿ô
     CameraBoom->TargetArmLength = CameraBaseLength;
+    bIsZooming = false;
 }
 void ATrainCharacter::StartZoom()
 {
