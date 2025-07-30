@@ -24,6 +24,12 @@ public:
 	UPROPERTY()
 	AActor* Target;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class UHealthComponent* HealthComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class UWidgetComponent* HPBar;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -35,8 +41,13 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	UFUNCTION(BlueprintCallable, Category = Attack)
-	virtual void Attack();
+	UFUNCTION(BlueprintNativeEvent, Category = Attack)
+	void Attack();
+	virtual void Attack_Implementation();
+
+	UFUNCTION(BlueprintNativeEvent)
+	void Death();
+	virtual void Death_Implementation();
 
 };
 

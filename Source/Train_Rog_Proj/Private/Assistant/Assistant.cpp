@@ -3,6 +3,7 @@
 
 #include "Assistant/Assistant.h"
 
+#include "Components/HealthComponent.h"
 #include "Enemy/Enemy.h"
 
 // Sets default values
@@ -38,6 +39,8 @@ void AAssistant::SearchTarget()
 {
 	FVector Start = GetActorLocation();
 	FRotator ActorRot = GetActorRotation();
+
+	AddActorLocalRotation(FRotator(0, 1, 0));
 
 	//호 모양으로 설정한 개수 만큼 라인 트레이스
 	for (int i = 0; i < SearchLineNumber; i++)
@@ -87,12 +90,12 @@ void AAssistant::SearchTarget()
 void AAssistant::Attack()
 {
 	UE_LOG(LogTemp, Warning, TEXT("ATTACK : Attack!!"));
-
-	if (FMath::FRand() < 0.6f)
+	
+	if (AEnemy* Boo = Cast<AEnemy>(Target))
 	{
-		Target->Destroy();
+		Boo->HealthComponent->DecreaseHP(10);
 	}
-
+	
 	//적이 죽었으면 공격 중단 후 탐색 재시작
 	if (!IsValid(Target))
 	{
