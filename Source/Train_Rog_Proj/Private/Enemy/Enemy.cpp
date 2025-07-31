@@ -2,26 +2,32 @@
 
 
 #include "Enemy/Enemy.h"
+
+#include "Components/AbilityComponent.h"
 #include "Components/HealthComponent.h"
 #include "Components/WidgetComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AEnemy::AEnemy()
 {
-	Mesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMesh"));
-	Mesh->SetCollisionProfileName("BlockAll");
-	SetRootComponent(Mesh);
-
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+
+	AbilityComponent = CreateDefaultSubobject<UAbilityComponent>(TEXT("AbilityComponent"));
 	
 	Tags.Add(FName("Enemy"));
 
 	HPBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("HPBar"));
-	HPBar->SetupAttachment(Mesh);
+	HPBar->SetupAttachment(GetMesh());
+	HPBar->SetRelativeLocation(FVector(0, 0, 210));
 	
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = true;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
 // Called when the game starts or when spawned
@@ -54,4 +60,17 @@ void AEnemy::Death_Implementation()
 {	
 	HealthComponent->Death();
 	UE_LOG(LogTemp, Warning, TEXT("ENEMY : Death Activated."));
+}
+
+bool AEnemy::FindTarget()
+{
+	AActor* FoundActor = UGameplayStatics::GetActorOfClass(GetWorld(), TargetClass);
+	
+	if (FoundActor)
+	{
+		Target = FoundActor;
+		return true;
+	}
+	
+	return false;
 }

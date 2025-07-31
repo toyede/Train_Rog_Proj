@@ -3,31 +3,31 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Pawn.h"
+#include "GameFramework/Character.h"
 #include "Enemy.generated.h"
 
 UCLASS()
-class TRAIN_ROG_PROJ_API AEnemy : public APawn
+class TRAIN_ROG_PROJ_API AEnemy : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this pawn's properties
 	AEnemy();
-
-	UPROPERTY(EditDefaultsOnly)
-	USkeletalMeshComponent* Mesh;
-
-	UPROPERTY(EditDefaultsOnly)
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<AActor> TargetClass;
 
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	AActor* Target;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	class UHealthComponent* HealthComponent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	class UAbilityComponent* AbilityComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	class UWidgetComponent* HPBar;
 
 protected:
@@ -48,6 +48,9 @@ public:
 	UFUNCTION(BlueprintNativeEvent)
 	void Death();
 	virtual void Death_Implementation();
+
+	UFUNCTION(BlueprintCallable)
+	bool FindTarget();
 
 };
 
