@@ -7,7 +7,24 @@
 #include "GameFramework/Actor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
+#include "Delegates/DelegateCombinations.h"
 #include "BackGroundObjectBase.generated.h"
+
+// 타일 종류 구분용 열거형
+UENUM(BlueprintType)
+enum class ETileCategory : uint8
+{
+    TileDefault UMETA(DisplayName="Default"),
+    TileRight   UMETA(DisplayName="Right"),
+    TileLeft    UMETA(DisplayName="Left"),
+};
+
+// ChangeDirection 이벤트 델리게이트 선언 (Object 자신을 인자로 던짐)
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(
+    FOnChangeDirectionEvent, 
+    ABackGroundObjectBase*, 
+    Source
+);
 
 UCLASS()
 class TRAIN_ROG_PROJ_API ABackGroundObjectBase : public AActor
@@ -16,6 +33,10 @@ class TRAIN_ROG_PROJ_API ABackGroundObjectBase : public AActor
 	
 public:	
 	ABackGroundObjectBase();
+
+	// 블루프린트/Manager에서 바인딩할 수 있게 공개
+    UPROPERTY(BlueprintAssignable, Category="Events")
+    FOnChangeDirectionEvent OnChangeDirection;
 	
 	// 필요 시, 이동/재사용 관련 메서드 선언
     UFUNCTION(BlueprintCallable) // UFUNCTION: 블루프린트에서 SetObjectLocation 함수를 노드로 사용할 수 있게 함
@@ -23,7 +44,10 @@ public:
 
 	// 타일 길이 저장용 변수
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category="Tile")
-    float MeasuredLength = 0.f;
+    float MeasuredXLength = 0.f;
+
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category="Tile")
+    float MeasuredYLength = 0.f;
 
 	// 몇개정도 스폰 예정?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SmallObjects")
@@ -45,16 +69,44 @@ public:
     UPROPERTY(EditAnywhere, Category = "Spawning", meta = (ClampMin = "1"))
     int32 MaxSpawnAttempts = 20;
 
+	// BP에서 이 프로토타입이 어느 카테고리인가 지정
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Spawning")
+    ETileCategory TileCategory;
+	
+	ETileCategory Direction;
+
 protected:
 	virtual void BeginPlay() override;
 
 	FVector Origin, BoxExtent;
 
+	// Blueprint에서 추가된 Box Collision 컴포넌트를 찾아 여기에 담습니다
+    UPROPERTY()
+    UBoxComponent* ChangeDirTrigger;
+
+    // Overlap 이벤트 핸들러
+    UFUNCTION()
+    void OnChangeDirOverlap(
+        UPrimitiveComponent* OverlappedComp,
+        AActor* OtherActor,
+        UPrimitiveComponent* OtherComp,
+        int32 OtherBodyIndex,
+        bool bFromSweep,
+        const FHitResult& SweepResult
+    );
+
+    // 부드럽게 회전시킬 대상
+    AActor* ActorToRotate = nullptr;
+
+    // 기차 회전 애니메이션 상태
+    bool bIsRotating = false;
+    FRotator StartRotation;
+    FRotator TargetRotation;
+    float RotationTime = 1.0f;    // 회전에 걸릴 총 시간(초)
+    float ElapsedTime = 0.0f;
+
 public:	
 	virtual void Tick(float DeltaTime) override;
-
-	// 전체 영역에 대해 소품 스폰을 자동 분배하는 메서드
-    void SpawnObjectsInAllAreas();
 
 	// 이미 스폰된 소품 위치 저장용 배열
     TArray<FVector> SpawnedLocations;
@@ -64,4 +116,8 @@ public:
 
 	// 소품을 스폰하는 함수
 	void SpawnSmallBackGrounds();
+
+	void RemoveSmallBackGrounds();
+
+	void SetTrigerBox();
 };
