@@ -3,6 +3,7 @@
 
 #include "BackGroundManager.h"
 #include "Components/BoxComponent.h"
+#include "DrawDebugHelpers.h"
 #include "Engine/World.h"
 
 static ETileMoveDirectoin TurnRight90(ETileMoveDirectoin Dir)
@@ -151,7 +152,7 @@ void ABackGroundManager::Tick(float DeltaTime)
         }
     }
 
-    UE_LOG(LogTemp, Warning, TEXT("%d"), CurrentSpawnDirection);
+    // UE_LOG(LogTemp, Warning, TEXT("%d"), CurrentSpawnDirection);
     
     // 앞으로 순간이동 시켜야 할지 체크
 	CheckAndRecycleObjects();
@@ -182,6 +183,7 @@ void ABackGroundManager::HandleChangeDirection(ABackGroundObjectBase* SourceObje
 // 타일 종류 변경용 함수: 다음 스폰될 타일을 Right또는 Left타일로 변경
 void ABackGroundManager::SetNextTileRL(auto* Object, FVector NewLoc)
 {
+    UE_LOG(LogTemp, Warning, TEXT("Run"));
     // 원하는 카테고리 결정
     ETileCategory Desired = Change_Right_Tile ? ETileCategory::TileRight : ETileCategory::TileLeft;
 
@@ -191,6 +193,7 @@ void ABackGroundManager::SetNextTileRL(auto* Object, FVector NewLoc)
         if (!*FoundTileType)
         {
             // 예외처리
+            UE_LOG(LogTemp, Warning, TEXT("Error1"));
             continue;
         }
 
@@ -200,6 +203,7 @@ void ABackGroundManager::SetNextTileRL(auto* Object, FVector NewLoc)
         if (DesiredTile->TileCategory != Desired)
         {
             // 원하는 타일이 타일종류배열에 없을 때 오류 방지용
+            UE_LOG(LogTemp, Warning, TEXT("Error2"));
             continue;
         }
 
@@ -304,21 +308,49 @@ void ABackGroundManager::CheckAndRecycleObjects()
     for (auto* Object : TileArray)
     {
         // 임시로 시야 설정
-        sight = Object->MeasuredYLength * 3;
+        sight = Object->MeasuredXLength * 4.0f;
 
         // 사각형 범위의 지름은 타일길이 + sight
-        float Threshold = Object->MeasuredXLength + sight;
+        float Threshold = sight;
+
+        FVector CustomExtentXLong(Threshold, Threshold/2.0f, Threshold);
+        FVector CustomExtentYLong(Threshold/2.0f, Threshold, Threshold);
     
         // 정사각형 모양의 범위 설정
-        const FBox SpawnBox(RefLoc - FVector(Threshold), RefLoc + FVector(Threshold));
+        const FBox SpawnBoxX(RefLoc - CustomExtentXLong, RefLoc + CustomExtentXLong);
+        const FBox SpawnBoxY(RefLoc - CustomExtentYLong, RefLoc + CustomExtentYLong);
+
+        // 디버깅을 위한 시각화 코드 추가
+        #if ENABLE_DRAW_DEBUG
+            // DrawDebugBox를 사용하기 위해 DrawDebugHelpers.h 헤더 파일이 필요합니다.
+            // 파일 상단에 #include "DrawDebugHelpers.h"가 있는지 확인하세요.
+            // (BackGroundObjectBase.cpp에는 이미 포함되어 있습니다.)
+
+            // SpawnBoxX를 녹색으로 그립니다.
+            DrawDebugBox(GetWorld(), SpawnBoxX.GetCenter(), SpawnBoxX.GetExtent(), FColor::Green, false, 0.1f, 0, 5.f);
+
+            // SpawnBoxY를 파란색으로 그립니다.
+            DrawDebugBox(GetWorld(), SpawnBoxY.GetCenter(), SpawnBoxY.GetExtent(), FColor::Blue, false, 0.1f, 0, 5.f);
+        #endif
 
         // 현재 검사중인 타일의 위치
         const FVector ObjLoc = Object->GetActorLocation();
 
         // 타일이 사각형 범위 안에 들어가있으면 재배치 불필요하므로 벗어나기
-        if (SpawnBox.IsInside(ObjLoc))
+        if (CurrentMoveDirection == ETileMoveDirectoin::Forward || CurrentMoveDirection == ETileMoveDirectoin::Backward)
         {
-            continue;
+            if(SpawnBoxX.IsInside(ObjLoc))
+            {
+                continue;
+            }
+        }
+
+        else if (CurrentMoveDirection == ETileMoveDirectoin::Right || CurrentMoveDirection == ETileMoveDirectoin::Left)
+        {
+            if(SpawnBoxY.IsInside(ObjLoc))
+            {
+                continue;
+            }
         }
 
         // 타일을 이동할 위치 변수
