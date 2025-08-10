@@ -32,6 +32,9 @@ struct FMapGenerationSettings
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Connections", meta = (ClampMin = "1", ClampMax = "3"))
 	int32 MaxConnectionsPerNode;
+	// 추가 연결 생성 여부
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Connections")
+	bool bAllowAdditionalConnections;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generation")
 	int32 RandomSeed;
@@ -102,6 +105,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Map Generation")
 	TArray<UMapNode*> GetAvailableMovements() const;
 
+	UFUNCTION(BlueprintCallable, Category = "Map Generation")
+	TArray<UMapNode*> GetAllNodes() const;
+
+
 protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Player")
 	UMapNode* CurrentPlayerNode;
@@ -109,13 +116,18 @@ protected:
 	void CreateNodesAtDepth(int32 Depth, int32 NodeCount);
 	void AssignSpecialNodeTypes();
 	void ConnectNodes();
-	void ValidateAllNodesReachable();
+	//void ValidateAllNodesReachable(); EnsureAllNodesReachable로 대체
+	//void EnsureAllNodesReachable();
 	void UpdateNodeAccessibility();
 
 	TArray<UMapNode*> GetNormalNodes() const;
 	void ShuffleArray(TArray<UMapNode*>& Array) const;
-	bool CanNodeReachDepth(UMapNode* StartNode, int32 TargetDepth) const;
-	void DFS_CheckReachability(UMapNode* CurrentNode, int32 TargetDepth, TSet<UMapNode*>& VisitedNodes, bool& bCanReach) const;
+	//bool CanNodeReachDepth(UMapNode* StartNode, int32 TargetDepth) const;
+	//void DFS_CheckReachability(UMapNode* CurrentNode, int32 TargetDepth, TSet<UMapNode*>& VisitedNodes, bool& bCanReach) const;
+	//void BackwardDFS(UMapNode* CurrentNode, TSet<UMapNode*>& ReachableNodes) const;
+	//bool AddEmergencyConnection(UMapNode* IsolatedNode);
+	UMapNode* SelectNodeWithFewestConnections(const TArray<UMapNode*>& Nodes) const;
+
 
 private:
 	FRandomStream RandomStream;

@@ -66,7 +66,7 @@ void UMapGenerator::GenerateMap()
 	ConnectNodes();
 
 	//모든 노드가 정비 노드에 도달 가능한지 검증
-	ValidateAllNodesReachable();
+	//ValidateAllNodesReachable();
 
 	//모든 노드에 접근 가능 막기
 	UpdateNodeAccessibility();
@@ -157,53 +157,159 @@ void UMapGenerator::AssignSpecialNodeTypes()
 
 void UMapGenerator::ConnectNodes()
 {
-	// 각 깊이별로 다음 깊이와 연결
-	for (int32 Depth = 0; Depth < 6; Depth++) // 깊이 6까지
-	{
-		TArray<UMapNode*>* CurrentDepthNodes = NodesByDepth.Find(Depth);
-		TArray<UMapNode*>* NextDepthNodes = NodesByDepth.Find(Depth + 1);
+	UE_LOG(LogTemp, Log, TEXT("Starting connection generation..."));
 
-		if (!CurrentDepthNodes || !NextDepthNodes)
+	// Phase 1: 모든 노드의 들어오는 연결 보장 (N+1 ← N)
+	int32 GuaranteedConnections = 0;
+
+	for (int32 Depth = 1; Depth <= 6; Depth++)
+	{
+		TArray<UMapNode*> CurrentDepthNodes = GetNodesAtDepth(Depth);
+		TArray<UMapNode*> PreviousDepthNodes = GetNodesAtDepth(Depth - 1);
+
+		if (PreviousDepthNodes.Num() == 0)
 		{
-			continue;
+			continue; // 이전 깊이에 노드가 없으면 건너뛰기
 		}
 
-		// 현재 깊이의 각 노드에서 다음 깊이로 연결
-		for (UMapNode* CurrentNode : *CurrentDepthNodes)
+		for (UMapNode* CurrentNode : CurrentDepthNodes)
 		{
-			TArray<UMapNode*> PossibleConnections;
-
-			// 연결 가능한 노드들 찾기
-			for (UMapNode* NextNode : *NextDepthNodes)
+			// 모든 노드는 들어오는 연결이 최소 1개 필요
+			if (CurrentNode->PreviousNodes.Num() == 0)
 			{
-				if (CurrentNode->CanConnectTo(NextNode))
+				// 이전 깊이에서 연결 수가 가장 적은 노드를 찾아서 연결
+				UMapNode* SelectedPreviousNode = SelectNodeWithFewestConnections(PreviousDepthNodes);
+
+				if (SelectedPreviousNode && SelectedPreviousNode->CanConnectTo(CurrentNode))
 				{
-					PossibleConnections.Add(NextNode);
+					SelectedPreviousNode->AddConnection(CurrentNode);
+					GuaranteedConnections++;
+
+					UE_LOG(LogTemp, Log, TEXT("Guaranteed connection: Node(%d,%d) -> Node(%d,%d) [Total outgoing: %d]"),
+						SelectedPreviousNode->Position.Depth, SelectedPreviousNode->Position.Row,
+						CurrentNode->Position.Depth, CurrentNode->Position.Row,
+						SelectedPreviousNode->ConnectedNodes.Num());
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Failed to add guaranteed connection for node at depth %d, row %d"),
+						CurrentNode->Position.Depth, CurrentNode->Position.Row);
 				}
 			}
+		}
+	}
 
-			if (PossibleConnections.Num() == 0)
+	UE_LOG(LogTemp, Log, TEXT("Phase 1 complete: Added %d guaranteed connections"), GuaranteedConnections);
+
+	// Phase 2: 각 노드의 나가는 연결 보장 (N → N+1)
+	int32 AdditionalConnections = 0;
+
+	if (GenerationSettings.bAllowAdditionalConnections)
+	{
+		for (int32 Depth = 0; Depth < 6; Depth++) // 깊이 6은 보스 노드라서 제외
+		{
+			TArray<UMapNode*> CurrentDepthNodes = GetNodesAtDepth(Depth);
+			TArray<UMapNode*> NextDepthNodes = GetNodesAtDepth(Depth + 1);
+
+			if (NextDepthNodes.Num() == 0)
 			{
 				continue;
 			}
 
-			// 연결 개수 결정
-			int32 ConnectionCount = RandomStream.RandRange(
-				GenerationSettings.MinConnectionsPerNode,
-				FMath::Min(GenerationSettings.MaxConnectionsPerNode, PossibleConnections.Num())
-			);
-
-			// 랜덤으로 연결할 노드들 선택
-			ShuffleArray(PossibleConnections);
-
-			for (int32 i = 0; i < ConnectionCount; i++)
+			for (UMapNode* CurrentNode : CurrentDepthNodes)
 			{
-				CurrentNode->AddConnection(PossibleConnections[i]);
+				int32 CurrentConnections = CurrentNode->ConnectedNodes.Num();
+
+				// 최소 연결 수 체크
+				if (CurrentConnections < GenerationSettings.MinConnectionsPerNode)
+				{
+					// 연결 가능한 노드들 찾기 (이미 연결된 노드 제외)
+					TArray<UMapNode*> PossibleConnections;
+					for (UMapNode* NextNode : NextDepthNodes)
+					{
+						if (CurrentNode->CanConnectTo(NextNode) && !CurrentNode->ConnectedNodes.Contains(NextNode))
+						{
+							PossibleConnections.Add(NextNode);
+						}
+					}
+
+					if (PossibleConnections.Num() > 0)
+					{
+						// 최소 연결 수를 만족할 때까지 연결 추가
+						int32 NeededConnections = GenerationSettings.MinConnectionsPerNode - CurrentConnections;
+						int32 ActualConnections = FMath::Min(NeededConnections, PossibleConnections.Num());
+
+						// 랜덤으로 연결할 노드들 선택
+						ShuffleArray(PossibleConnections);
+
+						for (int32 i = 0; i < ActualConnections; i++)
+						{
+							CurrentNode->AddConnection(PossibleConnections[i]);
+							AdditionalConnections++;
+						}
+
+						UE_LOG(LogTemp, Log, TEXT("Minimum connections added: Node(%d,%d) added %d connections [Total: %d]"),
+							CurrentNode->Position.Depth, CurrentNode->Position.Row, ActualConnections,
+							CurrentNode->ConnectedNodes.Num());
+					}
+				}
+
+				// 최대 연결 수 범위에서 추가 연결 (선택적)
+				CurrentConnections = CurrentNode->ConnectedNodes.Num();
+				if (CurrentConnections < GenerationSettings.MaxConnectionsPerNode)
+				{
+					// 연결 가능한 노드들 찾기 (이미 연결된 노드 제외)
+					TArray<UMapNode*> PossibleConnections;
+					for (UMapNode* NextNode : NextDepthNodes)
+					{
+						if (CurrentNode->CanConnectTo(NextNode) && !CurrentNode->ConnectedNodes.Contains(NextNode))
+						{
+							PossibleConnections.Add(NextNode);
+						}
+					}
+
+					if (PossibleConnections.Num() > 0)
+					{
+						// 랜덤으로 추가 연결 개수 결정 (0 ~ 최대 가능 개수)
+						int32 MaxAdditional = FMath::Min(
+							GenerationSettings.MaxConnectionsPerNode - CurrentConnections,
+							PossibleConnections.Num()
+						);
+
+						int32 AdditionalCount = RandomStream.RandRange(0, MaxAdditional);
+
+						if (AdditionalCount > 0)
+						{
+							// 랜덤으로 추가 연결할 노드들 선택
+							ShuffleArray(PossibleConnections);
+
+							for (int32 i = 0; i < AdditionalCount; i++)
+							{
+								CurrentNode->AddConnection(PossibleConnections[i]);
+								AdditionalConnections++;
+							}
+
+							UE_LOG(LogTemp, Log, TEXT("Optional connections added: Node(%d,%d) added %d connections [Total: %d]"),
+								CurrentNode->Position.Depth, CurrentNode->Position.Row, AdditionalCount,
+								CurrentNode->ConnectedNodes.Num());
+						}
+					}
+				}
 			}
 		}
+
+		UE_LOG(LogTemp, Log, TEXT("Phase 2 complete: Added %d additional connections"), AdditionalConnections);
 	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Phase 2 skipped: Additional connections disabled"));
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Connection generation complete: %d guaranteed + %d additional = %d total connections"),
+		GuaranteedConnections, AdditionalConnections, GuaranteedConnections + AdditionalConnections);
 }
 
+/*
 void UMapGenerator::ValidateAllNodesReachable()
 {
 	UMapNode* StartNode = GetStartNode();
@@ -232,6 +338,149 @@ void UMapGenerator::ValidateAllNodesReachable()
 		}
 	}
 }
+*/
+/*
+void UMapGenerator::EnsureAllNodesReachable()
+{
+	UMapNode* RepairNode = GetRepairNode();
+	if (!RepairNode)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Repair node not found for reachability check!"));
+		return;
+	}
+
+	// 1. 정비 노드에서 역방향 탐색으로 도달 가능한 노드들 찾기
+	TSet<UMapNode*> ReachableFromRepair;
+	BackwardDFS(RepairNode, ReachableFromRepair);
+
+	// 2. 도달 불가능한 노드들 찾아서 연결 추가
+	int32 FixedConnections = 0;
+	bool bNeedRetry = true;
+
+	while (bNeedRetry)
+	{
+		bNeedRetry = false;
+
+		for (UMapNode* Node : AllNodes)
+		{
+			if (Node->Position.Depth >= 5) continue;  // 정비, 보스 노드는 제외
+
+			if (!ReachableFromRepair.Contains(Node))
+			{
+				// 고립된 노드 발견 → 강제 연결 추가
+				if (AddEmergencyConnection(Node))
+				{
+					FixedConnections++;
+					UE_LOG(LogTemp, Warning, TEXT("Added emergency connection for isolated node at depth %d, row %d"),
+						Node->Position.Depth, Node->Position.Row);
+
+					// 연결 추가 후 다시 탐색
+					ReachableFromRepair.Empty();
+					BackwardDFS(RepairNode, ReachableFromRepair);
+					bNeedRetry = true;
+					break;  // 하나씩 처리
+				}
+			}
+		}
+	}
+
+	if (FixedConnections > 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Fixed %d isolated nodes with emergency connections"), FixedConnections);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("All nodes are reachable from repair node"));
+	}
+}
+*/
+/*
+void UMapGenerator::BackwardDFS(UMapNode* CurrentNode, TSet<UMapNode*>& ReachableNodes) const
+{
+	if (!CurrentNode || ReachableNodes.Contains(CurrentNode))
+	{
+		return;
+	}
+
+	ReachableNodes.Add(CurrentNode);
+
+	// 이 노드로 들어오는 모든 연결을 따라 역방향 탐색
+	for (UMapNode* PreviousNode : CurrentNode->PreviousNodes)
+	{
+		BackwardDFS(PreviousNode, ReachableNodes);
+	}
+}
+*/
+
+/*
+bool UMapGenerator::AddEmergencyConnection(UMapNode* IsolatedNode)
+{
+	if (!IsolatedNode || IsolatedNode->Position.Depth == 0)
+	{
+		return false;  // 시작 노드는 처리하지 않음
+	}
+
+	// 이전 깊이의 노드들 찾기
+	TArray<UMapNode*> PreviousDepthNodes = GetNodesAtDepth(IsolatedNode->Position.Depth - 1);
+
+	if (PreviousDepthNodes.Num() == 0)
+	{
+		return false;
+	}
+
+	// 연결 수가 적은 노드 우선으로 정렬
+	PreviousDepthNodes.Sort([](const UMapNode& A, const UMapNode& B) {
+		return A.ConnectedNodes.Num() < B.ConnectedNodes.Num();
+	});
+
+	// 연결 수가 가장 적은 노드부터 시도
+	for (UMapNode* PreviousNode : PreviousDepthNodes)
+	{
+		// 이미 최대 연결 수에 도달했으면 다음 노드 시도
+		if (PreviousNode->ConnectedNodes.Num() >= GenerationSettings.MaxConnectionsPerNode)
+		{
+			continue;
+		}
+
+		// 연결 가능한지 확인
+		if (PreviousNode->CanConnectTo(IsolatedNode))
+		{
+			// 응급 연결 추가
+			PreviousNode->AddConnection(IsolatedNode);
+
+			UE_LOG(LogTemp, Log, TEXT("Emergency connection: Node(%d,%d) -> Node(%d,%d)"),
+				PreviousNode->Position.Depth, PreviousNode->Position.Row,
+				IsolatedNode->Position.Depth, IsolatedNode->Position.Row);
+
+			return true;
+		}
+	}
+
+	// 모든 이전 노드가 최대 연결에 도달했거나 연결 불가능한 경우
+	// 연결 수가 가장 적은 노드에 강제로 연결 (최대 연결 수 무시)
+	if (PreviousDepthNodes.Num() > 0)
+	{
+		UMapNode* BestNode = PreviousDepthNodes[0];  // 이미 연결 수 순으로 정렬됨
+
+		if (BestNode->CanConnectTo(IsolatedNode))
+		{
+			BestNode->AddConnection(IsolatedNode);
+
+			UE_LOG(LogTemp, Warning, TEXT("Forced emergency connection (exceeded max): Node(%d,%d) -> Node(%d,%d)"),
+				BestNode->Position.Depth, BestNode->Position.Row,
+				IsolatedNode->Position.Depth, IsolatedNode->Position.Row);
+
+			return true;
+		}
+	}
+
+	UE_LOG(LogTemp, Error, TEXT("Failed to create emergency connection for node at depth %d, row %d"),
+		IsolatedNode->Position.Depth, IsolatedNode->Position.Row);
+
+	return false;
+}
+
+*/
 
 void UMapGenerator::UpdateNodeAccessibility()
 {
@@ -321,6 +570,11 @@ TArray<UMapNode*> UMapGenerator::GetAvailableMovements() const
 	return CurrentPlayerNode->GetAvailableNextNodes();
 }
 
+TArray<UMapNode*> UMapGenerator::GetAllNodes() const
+{
+	return AllNodes;
+}
+
 TArray<UMapNode*> UMapGenerator::GetNormalNodes() const
 {
 	TArray<UMapNode*> NormalNodes;
@@ -345,6 +599,51 @@ void UMapGenerator::ShuffleArray(TArray<UMapNode*>& Array) const
 	}
 }
 
+UMapNode* UMapGenerator::SelectNodeWithFewestConnections(const TArray<UMapNode*>& Nodes) const
+{
+	if (Nodes.Num() == 0)
+	{
+		return nullptr;
+	}
+
+	// 연결 수별로 노드들을 그룹화
+	TMap<int32, TArray<UMapNode*>> ConnectionGroups;
+
+	for (UMapNode* Node : Nodes)
+	{
+		int32 ConnectionCount = Node->ConnectedNodes.Num();
+		ConnectionGroups.FindOrAdd(ConnectionCount).Add(Node);
+	}
+
+	// 최소 연결 수 찾기
+	int32 MinConnections = INT32_MAX;
+	for (const auto& Group : ConnectionGroups)
+	{
+		if (Group.Key < MinConnections)
+		{
+			MinConnections = Group.Key;
+		}
+	}
+
+	// 최소 연결 수를 가진 노드들 중에서 랜덤 선택
+	TArray<UMapNode*>& MinConnectionNodes = ConnectionGroups[MinConnections];
+
+	if (MinConnectionNodes.Num() == 1)
+	{
+		return MinConnectionNodes[0];
+	}
+	else
+	{
+		// 같은 연결 수를 가진 노드들 중 랜덤 선택
+		int32 RandomIndex = RandomStream.RandRange(0, MinConnectionNodes.Num() - 1);
+		return MinConnectionNodes[RandomIndex];
+	}
+}
+
+
+
+
+/*
 bool UMapGenerator::CanNodeReachDepth(UMapNode* StartNode, int32 TargetDepth) const
 {
 	if (!StartNode)
@@ -357,6 +656,7 @@ bool UMapGenerator::CanNodeReachDepth(UMapNode* StartNode, int32 TargetDepth) co
 	DFS_CheckReachability(StartNode, TargetDepth, VisitedNodes, bCanReach);
 	return bCanReach;
 }
+
 
 void UMapGenerator::DFS_CheckReachability(UMapNode* CurrentNode, int32 TargetDepth, TSet<UMapNode*>& VisitedNodes, bool& bCanReach) const
 {
@@ -384,3 +684,5 @@ void UMapGenerator::DFS_CheckReachability(UMapNode* CurrentNode, int32 TargetDep
 		}
 	}
 }
+
+*/
