@@ -90,6 +90,7 @@ void ATrainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
         // 이동 액션 바인딩
         EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Move);
 
+
 	}
 
     // 점프 액션 바인딩
@@ -116,6 +117,12 @@ void ATrainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
     {
         EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Look);
 	}
+
+    if (RunAction)
+    {
+        EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Started, this, &ATrainCharacter::StartRun);
+        EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &ATrainCharacter::StopRun);
+    }
 }
 
 void ATrainCharacter::Move(const FInputActionValue& Value)
@@ -233,5 +240,19 @@ void ATrainCharacter::Look(const FInputActionValue& Value)
     // 컨트롤러 회전값 갱신
     ControlRot.Pitch = NewPitch;
     Controller->SetControlRotation(ControlRot);
+}
+
+void ATrainCharacter::StartRun()
+{
+    // 달리기 시작
+    bIsRunning = true;
+    GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed * RunSpeedMultiplier;
+}
+
+void ATrainCharacter::StopRun()
+{
+    // 달리기 중지
+    bIsRunning = false;
+    GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
 }
 

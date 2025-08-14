@@ -88,6 +88,15 @@ protected:
 
 	void Look(const FInputActionValue& Value);
 
+	// 달리기 액션 변수 선언
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* RunAction;
+
+	bool bIsRunning;
+	float RunSpeedMultiplier = 1.5f;
+
+	void StartRun();
+	void StopRun();
 
 
 public:	
