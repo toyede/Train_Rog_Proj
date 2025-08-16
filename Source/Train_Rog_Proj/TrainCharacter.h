@@ -9,6 +9,10 @@
 #include "InputAction.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+// ê¹€ì¬í›ˆ ì¶”ê°€
+#include "Dialogue/InteractInterface.h"
+#include "DrawDebugHelpers.h"
+// ê¹€ì¬í›ˆ ì¶”ê°€
 #include "TrainCharacter.generated.h"
 
 UCLASS()
@@ -25,18 +29,18 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
-	// Input Mapping Context ¿¡¼ÂÀ» ¿¡µğÅÍ¿¡¼­ ÇÒ´ç °¡´ÉÇÏ°Ô ¼±¾ğ
+	// Input Mapping Context ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ ï¿½Ò´ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputMappingContext* DefaultMappingContext;
 
-	// ÀÌµ¿ Input Action ¿¡¼Â
+	// ï¿½Ìµï¿½ Input Action ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* MoveAction;
 
 
-	// ÀÌµ¿ Ã³¸® ÇÔ¼ö (Input Action¿¡¼­ È£Ãâ)
+	// ï¿½Ìµï¿½ Ã³ï¿½ï¿½ ï¿½Ô¼ï¿½ (Input Actionï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½)
 	void Move(const FInputActionValue& Value);
-	// 3ÀÎÄª Ä«¸Ş¶ó¸¦ À§ÇØ ¼±¾ğ
+	// 3ï¿½ï¿½Äª Ä«ï¿½Ş¶ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	USpringArmComponent* CameraBoom;
 
@@ -46,53 +50,62 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Zoom")
 	bool bIsZooming;
 
-	// Á¡ÇÁ¡¤¿õÅ©¸®±â ¾×¼Ç º¯¼ö ¼±¾ğ
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å©ï¿½ï¿½ï¿½ï¿½ ï¿½×¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* JumpAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* CrouchAction;
 
-	// ¿ø·¡ ÀÌµ¿ ¼Óµµ ÀúÀå¿ë
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* InteractAction;
+
+	// ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ ï¿½Óµï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
 	float NormalWalkSpeed;
 
-	// ¿õÅ©¸®±â ½Ã Ä«¸Ş¶ó ÀÌµ¿
+	// ï¿½ï¿½Å©ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Ä«ï¿½Ş¶ï¿½ ï¿½Ìµï¿½
 	FVector DefaultCameraOffset;
 	FVector CrouchCameraOffset;
 
-	// ÇÔ¼ö ¼±¾ğ
+	// ï¿½Ô¼ï¿½ ï¿½ï¿½ï¿½ï¿½
 	void StartJump();
 	void StopJump();
 	void StartCrouch();
 	void StopCrouch();
 
-	// ÁÜ ¾×¼Ç º¯¼ö ¼±¾ğ
+	// ï¿½ï¿½ ï¿½×¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* Zoom;
 
-	// ÁÜ Ã³¸® ÇÔ¼ö (Input Action¿¡¼­ È£Ãâ)
+	// ï¿½ï¿½ Ã³ï¿½ï¿½ ï¿½Ô¼ï¿½ (Input Actionï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½)
 	void ZoomIn();
 	void ZoomOut();
 	void StartZoom();
 	void StopZoom();
 
-	// Ä«¸Ş¶ó ÁÜÀ» À§ÇÑ ½ºÇÁ¸µ ¾Ï ±æÀÌ
+	// Ä«ï¿½Ş¶ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float CameraBaseLength;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 	float CameraZoomLengh;
 
-	// Look ¾×¼Ç º¯¼ö ¼±¾ğ
+	// Look ï¿½×¼ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* LookAction;
 
 	void Look(const FInputActionValue& Value);
-
-
-
-public:	
+	
+	
+	
+	public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	
+	// ê¹€ì¬í›ˆ ì¶”ê°€
+	void Interact(const FInputActionValue& Value);
 
-
+	// ìƒí˜¸ì‘ìš© ê±°ë¦¬
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
+	float TraceDistance = 500.0f; // ê¸°ë³¸ê°’ì„ 500ìœ¼ë¡œ ì„¤ì •
+	
 };

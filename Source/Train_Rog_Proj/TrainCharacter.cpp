@@ -1,10 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+#include "TrainCharacter.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "TrainCharacter.h"
 
 // Sets default values
 ATrainCharacter::ATrainCharacter()
@@ -115,6 +115,12 @@ void ATrainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
     if (LookAction)
     {
         EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Look);
+	}
+
+    // 김재훈 추가
+    if (InteractAction)
+    {
+        EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Interact);
 	}
 }
 
@@ -235,3 +241,47 @@ void ATrainCharacter::Look(const FInputActionValue& Value)
     Controller->SetControlRotation(ControlRot);
 }
 
+// 김재훈 추가
+void ATrainCharacter::Interact(const FInputActionValue& Value)
+{
+    if (Controller == nullptr || FollowCamera == nullptr)
+	{
+		return;
+	}
+
+	// 라인 트레이스 시작점과 끝점 계산
+	FVector StartLocation = FollowCamera->GetComponentLocation();
+	FVector ForwardVector = FollowCamera->GetForwardVector();
+	FVector EndLocation = StartLocation + (ForwardVector * TraceDistance);
+
+	// 충돌 체크용 변수 세팅
+	FHitResult HitResult;
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(this); // 자기 자신은 트레이스에서 제외
+
+	// 라인 트레이스 실행
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		StartLocation,
+		EndLocation,
+		ECC_Visibility, // Visibility 채널에 있는 오브젝트만 감지
+		CollisionParams
+	);
+
+	DrawDebugLine(GetWorld(), StartLocation, EndLocation, bHit ? FColor::Green : FColor::Red, false, 1.0f, 0, 1.0f);
+
+	// 무언가에 부딪혔는지 확인
+	if (bHit)
+	{
+		// 부딪힌 액터 가져오기
+		AActor* HitActor = HitResult.GetActor();
+
+		// 부딪힌 액터가 InteractInterface를 구현했는지 확인
+		if (HitActor && HitActor->GetClass()->ImplementsInterface(UInteractInterface::StaticClass()))
+		{
+            // 첫번째 인자(HitActor)는 Interact함수를 실행할 객체, this는 Interact함수에서 인자로 받을 객체.
+			IInteractInterface::Execute_Interact(HitActor, this);
+            // UE_LOG(LogTemp, Warning, TEXT("Debug"));
+		}
+	}
+}
