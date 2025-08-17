@@ -256,3 +256,23 @@ void ATrainCharacter::StopRun()
     GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
 }
 
+void ATrainCharacter::RemapKey(UInputAction* InputAction, FKey OldKey, FKey NewKey)
+{
+    if (!DefaultMappingContext || !InputAction) return;
+
+    // 1. 기존 키 언맵
+    DefaultMappingContext->UnmapKey(InputAction, OldKey);
+
+    // 2. 새 키 맵핑
+    DefaultMappingContext->MapKey(InputAction, NewKey);
+
+    // 3. 변경 적용
+    if (APlayerController* PC = Cast<APlayerController>(Controller))
+    {
+        if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+        {
+            Subsystem->RemoveMappingContext(DefaultMappingContext);
+            Subsystem->AddMappingContext(DefaultMappingContext, 0);
+        }
+    }
+}
