@@ -90,6 +90,7 @@ void ATrainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
         // ??? ??? ?????
         EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Move);
 
+
 	}
 
     // ???? ??? ?????
@@ -116,6 +117,12 @@ void ATrainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
     {
         EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Look);
 	}
+
+    if (RunAction)
+    {
+        EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Started, this, &ATrainCharacter::StartRun);
+        EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &ATrainCharacter::StopRun);
+    }
 }
 
 void ATrainCharacter::Move(const FInputActionValue& Value)
@@ -235,3 +242,37 @@ void ATrainCharacter::Look(const FInputActionValue& Value)
     Controller->SetControlRotation(ControlRot);
 }
 
+void ATrainCharacter::StartRun()
+{
+    // 달리기 시작
+    bIsRunning = true;
+    GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed * RunSpeedMultiplier;
+}
+
+void ATrainCharacter::StopRun()
+{
+    // 달리기 중지
+    bIsRunning = false;
+    GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
+}
+
+void ATrainCharacter::RemapKey(UInputAction* InputAction, FKey OldKey, FKey NewKey)
+{
+    if (!DefaultMappingContext || !InputAction) return;
+
+    // 1. 기존 키 언맵
+    DefaultMappingContext->UnmapKey(InputAction, OldKey);
+
+    // 2. 새 키 맵핑
+    DefaultMappingContext->MapKey(InputAction, NewKey);
+
+    // 3. 변경 적용
+    if (APlayerController* PC = Cast<APlayerController>(Controller))
+    {
+        if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+        {
+            Subsystem->RemoveMappingContext(DefaultMappingContext);
+            Subsystem->AddMappingContext(DefaultMappingContext, 0);
+        }
+    }
+}

@@ -17,11 +17,9 @@ class TRAIN_ROG_PROJ_API ATrainCharacter : public ACharacter
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	ATrainCharacter();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
@@ -88,8 +86,18 @@ protected:
 
 	void Look(const FInputActionValue& Value);
 
+	// 달리기 액션 변수 선언
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* RunAction;
 
+	bool bIsRunning;
+	float RunSpeedMultiplier = 1.5f;
 
+	void StartRun();
+	void StopRun();
+
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	void RemapKey(UInputAction* InputAction, FKey OldKey, FKey NewKey);
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
