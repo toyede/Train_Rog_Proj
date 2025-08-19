@@ -37,6 +37,12 @@ void UDialogueComponent::AdvanceDialogue(FName NextID)
     {
         // 행을 찾았으면 "대화 업데이트됨!" 이벤트 방송
         OnDialogueUpdated.Broadcast(*CurrentDialogueRow);
+
+        // 만약 EventTag가 있다면, "이벤트 발생했음!" 이벤트 방송
+        if (!CurrentDialogueRow->EventTag.IsNone())
+        {
+            OnEventTriggered.Broadcast(CurrentDialogueRow->EventTag);
+        }
     }
     else
     {

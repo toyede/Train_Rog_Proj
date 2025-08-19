@@ -10,6 +10,7 @@
 // UI로 데이터 전달 및 이벤트 알림을 위한 델리게이트 선언
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDialogueUpdated, const FDialogueRow&, DialogueRow);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDialogueFinished);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEventTriggered, FName, EventTag);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class TRAIN_ROG_PROJ_API UDialogueComponent : public UActorComponent
@@ -33,6 +34,9 @@ public:
 
     UPROPERTY(BlueprintAssignable, Category = "Dialogue")
     FOnDialogueFinished OnDialogueFinished;
+
+    UPROPERTY(BlueprintAssignable, Category = "Dialogue")
+    FOnEventTriggered OnEventTriggered;
 
     // 대화를 시작하는 함수
     UFUNCTION(BlueprintCallable, Category = "Dialogue")
