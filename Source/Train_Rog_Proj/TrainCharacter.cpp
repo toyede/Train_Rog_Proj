@@ -90,6 +90,7 @@ void ATrainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
         // ??? ??? ?????
         EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Move);
 
+
 	}
 
     // ???? ??? ?????
@@ -122,6 +123,12 @@ void ATrainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
     {
         EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Interact);
 	}
+
+    if (RunAction)
+    {
+        EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Started, this, &ATrainCharacter::StartRun);
+        EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &ATrainCharacter::StopRun);
+    }
 }
 
 void ATrainCharacter::Move(const FInputActionValue& Value)
@@ -284,4 +291,39 @@ void ATrainCharacter::Interact(const FInputActionValue& Value)
             // UE_LOG(LogTemp, Warning, TEXT("Debug"));
 		}
 	}
+}
+
+void ATrainCharacter::StartRun()
+{
+    // �޸��� ����
+    bIsRunning = true;
+    GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed * RunSpeedMultiplier;
+}
+
+void ATrainCharacter::StopRun()
+{
+    // �޸��� ����
+    bIsRunning = false;
+    GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
+}
+
+void ATrainCharacter::RemapKey(UInputAction* InputAction, FKey OldKey, FKey NewKey)
+{
+    if (!DefaultMappingContext || !InputAction) return;
+
+    // 1. ���� Ű ���
+    DefaultMappingContext->UnmapKey(InputAction, OldKey);
+
+    // 2. �� Ű ����
+    DefaultMappingContext->MapKey(InputAction, NewKey);
+
+    // 3. ���� ����
+    if (APlayerController* PC = Cast<APlayerController>(Controller))
+    {
+        if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+        {
+            Subsystem->RemoveMappingContext(DefaultMappingContext);
+            Subsystem->AddMappingContext(DefaultMappingContext, 0);
+        }
+    }
 }
