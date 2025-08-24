@@ -18,7 +18,7 @@ UMapGenerator::UMapGenerator()
 void UMapGenerator::GenerateMap()
 {
 	//기존 맵 정리 나중에 없앨수도
-	ClearMap();
+	//ClearMap();
 
 	int32 SeedToUse = GenerationSettings.RandomSeed;
 	if(SeedToUse == -1)
@@ -32,28 +32,37 @@ void UMapGenerator::GenerateMap()
 
 	//깊이 0: 시작 노드 고정
 	ActualNodesPerDepth.Add(1);
+	//깊이 1: 무조건 3개 고정
+	ActualNodesPerDepth.Add(3);
 
-	//깊이 1~4: 연결 제약 조건을 고려한 절차적 생성
-	for(int32 Depth = 1; Depth <= 4; ++Depth)
+	//깊이 2~5: 연결 제약 조건을 고려한 절차적 생성
+	for (int32 Depth = 2; Depth <= 5; ++Depth)
 	{
 		int32 PreviousDepthNodeCount = ActualNodesPerDepth[Depth - 1];
 		//최대 노드 수 = 이전 깊이 노드 수 * 3
 		int32 MaxPossibleNodes = PreviousDepthNodeCount * 3;
 		//헤더에서 최대 6으로 해뒀는데 위의 계산 값이 6을 넘으면 6으로 사용
 		int32 ActualMaxNodes = FMath::Min(GenerationSettings.MaxNodesPerDepth, MaxPossibleNodes);
-		//최소는 2개로 고정, 하지만 최대값보다 클 수 없음.
-		int32 MinNodes = FMath::Min(2, ActualMaxNodes);
+		//최소는 3개로 고정, 하지만 최대값보다 클 수 없음.
+		int32 MinNodes = FMath::Min(3, ActualMaxNodes);
 
 		int32 RandomNodeCount = RandomStream.RandRange(MinNodes, ActualMaxNodes);
 		ActualNodesPerDepth.Add(RandomNodeCount);
 
-		UE_LOG(LogTemp, Log, TEXT("Depth %d: PrevNodes = %d, MaxPossible = %d, Generated = %d"), Depth, PreviousDepthNodeCount, MaxPossibleNodes, RandomNodeCount);
+		if (Depth == 5)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Depth %d (Shop): PrevNodes = %d, MaxPossible = %d, Generated = %d"), Depth, PreviousDepthNodeCount, MaxPossibleNodes, RandomNodeCount);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("Depth %d: PrevNodes = %d, MaxPossible = %d, Generated = %d"), Depth, PreviousDepthNodeCount, MaxPossibleNodes, RandomNodeCount);
+		}
 	}
-	ActualNodesPerDepth.Add(1); // 깊이 5: 정비 노드
+
 	ActualNodesPerDepth.Add(1); // 깊이 6: 보스 노드
 
 	//깊이별 노드 생성
-	for(int32 Depth = 0; Depth < ActualNodesPerDepth.Num(); Depth++)
+	for (int32 Depth = 0; Depth < ActualNodesPerDepth.Num(); Depth++)
 	{
 		int32 NodeCount = ActualNodesPerDepth[Depth];
 		CreateNodesAtDepth(Depth, NodeCount);
@@ -101,7 +110,7 @@ void UMapGenerator::CreateNodesAtDepth(int32 Depth, int32 NodeCount)
 		}
 		else if(Depth == 5)
 		{
-			NewNode->NodeType = ENodeType::Repair;
+			NewNode->NodeType = ENodeType::Shop;
 		}
 		else if(Depth == 6)
 		{
@@ -120,7 +129,7 @@ void UMapGenerator::CreateNodesAtDepth(int32 Depth, int32 NodeCount)
 
 void UMapGenerator::AssignSpecialNodeTypes()
 {
-	//일반 노드들 가져오기
+	//일반 노드들 가져오기 (깊이 5 제외 - 이미 상점으로 설정됨)
 	TArray<UMapNode*> NormalNodes = GetNormalNodes();
 
 	if (NormalNodes.Num() == 0)
@@ -132,11 +141,11 @@ void UMapGenerator::AssignSpecialNodeTypes()
 
 	int32 NodeIndex = 0;
 
-	//상점 노드 할당
-	int32 ShopNodeCount = RandomStream.RandRange(GenerationSettings.MinShopNodes, GenerationSettings.MaxShopNodes);
-	ShopNodeCount = FMath::Min(ShopNodeCount, NormalNodes.Num() - NodeIndex); // 남은 노드 수보다 많을 수 없음
+	//상점 노드 할당 (깊이 1~4에만 적용)
+	int32 AdditionalShopNodeCount = RandomStream.RandRange(GenerationSettings.MinShopNodes, GenerationSettings.MaxShopNodes);
+	AdditionalShopNodeCount = FMath::Min(AdditionalShopNodeCount, NormalNodes.Num() - NodeIndex);
 
-	for (int32 i = 0; i < ShopNodeCount && NodeIndex < NormalNodes.Num(); i++)
+	for (int32 i = 0; i < AdditionalShopNodeCount && NodeIndex < NormalNodes.Num(); i++)
 	{
 		NormalNodes[NodeIndex]->NodeType = ENodeType::Shop;
 		NodeIndex++;
@@ -152,7 +161,7 @@ void UMapGenerator::AssignSpecialNodeTypes()
 		NodeIndex++;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Special node assignment complete: Shop %d, Special %d"), ShopNodeCount, SpecialNodeCount);
+	UE_LOG(LogTemp, Log, TEXT("Special node assignment complete: Additional Shop %d, Special %d (Depth 5 shops already set)"), AdditionalShopNodeCount, SpecialNodeCount);
 }
 
 void UMapGenerator::ConnectNodes()
