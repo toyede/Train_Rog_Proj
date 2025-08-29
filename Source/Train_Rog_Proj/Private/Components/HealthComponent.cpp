@@ -32,30 +32,33 @@ void UHealthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	// ...
 }
 
+//체력 회복 함수 amount 만큼 체력을 회복.
 void UHealthComponent::IncreaseHP(float amount)
 {
+	//현재 체력에서 amount 만큼 회복
 	CurrentHP = CurrentHP + amount;
-	
+
+	//최대 체력 초과면
 	if (CurrentHP > MaxHP)
 	{
+		//최대 체력으로 설정
 		CurrentHP = MaxHP;
 	}
 }
 
+//체력 감소 함수 amount 만큼 체력을 감소.
 void UHealthComponent::DecreaseHP(float amount)
 {
+	//현재 체력에서 amount 만큼 감소
 	CurrentHP = CurrentHP - amount;
-	
+
+	//만약 0이하면
 	if (CurrentHP <= 0)
 	{
+		//현재 체력 0으로 설정
 		CurrentHP = 0;
-		Death();
+		//죽었다고 알림!!
+		OnDeath.Broadcast();
 	}
-}
-
-void UHealthComponent::Death_Implementation()
-{
-	UE_LOG(LogTemp, Warning, TEXT("HEALTH COMPONENT : Death Function Activated."));
-	OnDeath.Broadcast();
 }
 

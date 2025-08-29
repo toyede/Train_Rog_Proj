@@ -16,13 +16,16 @@ public:
 	// Sets default values for this component's properties
 	UAbilityComponent();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability")
+	//공격력
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability", meta = (ToolTip = "공격력"))
 	float Damage = 10.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability")
+	//방어력
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability", meta = (ToolTip = "방어력"))
 	float Defense = 5.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability")
+	//공격 속도
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability", meta = (ToolTip = "공격 속도"))
 	float AttackSpeed = 1.0f;
 
 protected:
