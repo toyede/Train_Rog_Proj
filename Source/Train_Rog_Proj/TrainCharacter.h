@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -114,8 +112,68 @@ public:
 	// ê¹€ìž¬í›ˆ ì¶”ê°€
 	void Interact(const FInputActionValue& Value);
 
+<<<<<<< HEAD
+	//´É·ÂÄ¡
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	float HP;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	float MaxHP;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	float Power;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	float Defense;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	float AttackSpeed;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	float CriticalChance;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	float CriticalDamage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	int Level;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	int EXP;
+
+	// ½ºÅÃ ¼öÄ¡
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
+	int HPStack;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
+	int PowerStack;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
+	int DefenseStack;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
+	float AttackSpeedStack;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
+	float CriticalChanceStack;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
+	float CriticalDamageStack;
+
+	// ½ºÅÝ ºÐ¹è Æ÷ÀÎÆ®
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
+	int StatPoint;
+
+	//´É·ÂÄ¡ Áõ°¡ ÇÔ¼ö
+	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
+	int IncreaseHP();
+	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
+	int IncreasePower();
+	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
+	int IncreaseDefense();
+	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
+	float IncreaseAttackSpeed();
+	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
+	float IncreaseCriticalChance();
+	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
+	float IncreaseCriticalDamage();
+
+
+	// ·¹º§¾÷ ÇÔ¼ö
+	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
+	void LevelUp();
+
+=======
 	// ìƒí˜¸ìž‘ìš© ê±°ë¦¬
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
 	float TraceDistance = 500.0f; // ê¸°ë³¸ê°’ì„ 500ìœ¼ë¡œ ì„¤ì •
+>>>>>>> Develop
 	
 };
