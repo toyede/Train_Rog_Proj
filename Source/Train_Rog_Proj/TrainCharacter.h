@@ -125,7 +125,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") float Power;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") float Defense;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") float AttackSpeed;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") float CriticalChance;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") int CriticalChance;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") float CriticalDamage;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") int Level;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") int EXP;
@@ -153,4 +153,9 @@ public:
     /** 레벨업 함수 */
     UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
     void LevelUp();
+    
+    /** 데미지 함수 */
+    UFUNCTION(BlueprintCallable, Category = "Player Battle")
+    float TakeDamage(float weaponDamage, int weaponConst);
+    
 };

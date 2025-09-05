@@ -6,6 +6,8 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "DrawDebugHelpers.h"
+#include <cstdlib>
+#include <ctime>
 //#include "InteractInterface.h"
 
 // 캐릭터 클래스의 기본값 세팅
@@ -74,6 +76,9 @@ void ATrainCharacter::BeginPlay()
     {
         Controller->SetControlRotation(FRotator(0.f, 0.f, 0.f));
     }
+
+    // 난수 초기화
+    srand(static_cast<unsigned int>(time(NULL)));
 }
 
 // 매 프레임 호출
@@ -311,5 +316,18 @@ float ATrainCharacter::IncreaseCriticalDamage()
 void ATrainCharacter::LevelUp()
 {
     
+}
+
+float ATrainCharacter::TakeDamage(float weaponDamage, int weaponConst)
+{
+    float totalDamage = weaponDamage + Power * weaponConst;
+
+    int Critical = rand() % 100;
+    if (Critical <= CriticalChance)
+    {
+        totalDamage += totalDamage * CriticalDamage;
+        GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::White, TEXT("크리티컬 데미지"));
+    }
+    return totalDamage;
 }
 
