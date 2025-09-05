@@ -125,7 +125,7 @@ void ATrainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
         EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Look);
 	}
 
-    // 김?�훈 추�?
+    // 김재훈 추가
     if (InteractAction)
     {
         EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Interact);
@@ -260,7 +260,7 @@ void ATrainCharacter::Look(const FInputActionValue& Value)
     Controller->SetControlRotation(ControlRot);
 }
 
-// 김?�훈 추�?
+// 김재훈 추가
 void ATrainCharacter::Interact(const FInputActionValue& Value)
 {
     if (Controller == nullptr || FollowCamera == nullptr)
@@ -268,37 +268,37 @@ void ATrainCharacter::Interact(const FInputActionValue& Value)
 		return;
 	}
 
-	// ?�인 ?�레?�스 ?�작?�과 ?�점 계산
+	// 라인 트레이스 시작점과 끝점 계산
 	FVector StartLocation = FollowCamera->GetComponentLocation();
 	FVector ForwardVector = FollowCamera->GetForwardVector();
 	FVector EndLocation = StartLocation + (ForwardVector * TraceDistance);
 
-	// 충돌 체크??변???�팅
+	// 충돌 체크용 변수 세팅
 	FHitResult HitResult;
 	FCollisionQueryParams CollisionParams;
-	CollisionParams.AddIgnoredActor(this); // ?�기 ?�신?� ?�레?�스?�서 ?�외
+	CollisionParams.AddIgnoredActor(this); // 자기 자신은 트레이스에서 제외
 
-	// ?�인 ?�레?�스 ?�행
+	// 라인 트레이스 실행
 	bool bHit = GetWorld()->LineTraceSingleByChannel(
 		HitResult,
 		StartLocation,
 		EndLocation,
-		ECC_Visibility, // Visibility 채널???�는 ?�브?�트�?감�?
+		ECC_Visibility, // Visibility 채널에 있는 오브젝트만 감지
 		CollisionParams
 	);
 
 	DrawDebugLine(GetWorld(), StartLocation, EndLocation, bHit ? FColor::Green : FColor::Red, false, 1.0f, 0, 1.0f);
 
-	// 무언가??부?�혔?��? ?�인
+	// 무언가에 부딪혔는지 확인
 	if (bHit)
 	{
-		// 부?�힌 ?�터 가?�오�?
+		// 부딪힌 액터 가져오기
 		AActor* HitActor = HitResult.GetActor();
 
-		// 부?�힌 ?�터가 InteractInterface�?구현?�는지 ?�인
+		// 부딪힌 액터가 InteractInterface를 구현했는지 확인
 		if (HitActor && HitActor->GetClass()->ImplementsInterface(UInteractInterface::StaticClass()))
 		{
-            // 첫번�??�자(HitActor)??Interact?�수�??�행??객체, this??Interact?�수?�서 ?�자�?받을 객체.
+            // 첫번째 인자(HitActor)는 Interact함수를 실행할 객체, this는 Interact함수에서 인자로 받을 객체.
 			IInteractInterface::Execute_Interact(HitActor, this);
             // UE_LOG(LogTemp, Warning, TEXT("Debug"));
 		}
@@ -323,7 +323,7 @@ void ATrainCharacter::RemapKey(UInputAction* InputAction, FKey OldKey, FKey NewK
 {
     if (!DefaultMappingContext || !InputAction) return;
 
-    // 1. ���� Ű ���?
+    // 1. ���� Ű ���
     DefaultMappingContext->UnmapKey(InputAction, OldKey);
 
     // 2. �� Ű ����
