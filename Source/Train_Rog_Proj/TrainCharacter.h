@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -102,5 +100,62 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	//능력치
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	float HP;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	float MaxHP;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	float Power;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	float Defense;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	float AttackSpeed;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	float CriticalChance;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	float CriticalDamage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	int Level;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
+	int EXP;
 
+	// 스택 수치
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
+	int HPStack;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
+	int PowerStack;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
+	int DefenseStack;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
+	float AttackSpeedStack;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
+	float CriticalChanceStack;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
+	float CriticalDamageStack;
+
+	// 스텟 분배 포인트
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
+	int StatPoint;
+
+	//능력치 증가 함수
+	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
+	int IncreaseHP();
+	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
+	int IncreasePower();
+	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
+	int IncreaseDefense();
+	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
+	float IncreaseAttackSpeed();
+	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
+	float IncreaseCriticalChance();
+	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
+	float IncreaseCriticalDamage();
+
+
+	// 레벨업 함수
+	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
+	void LevelUp();
+
+	
 };
