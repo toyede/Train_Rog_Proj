@@ -7,17 +7,14 @@
 #include "InputAction.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-// 김재훈 추가
 #include "Dialogue/InteractInterface.h"
 #include "DrawDebugHelpers.h"
-// 김재훈 추가
 #include "TrainCharacter.generated.h"
 
 UCLASS()
 class TRAIN_ROG_PROJ_API ATrainCharacter : public ACharacter
 {
 	GENERATED_BODY()
-
 public:
 	ATrainCharacter();
 
@@ -56,7 +53,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* InteractAction;
 
-	// ���� �̵� �ӵ� �����
+	// ���� �̵� �ӵ� �����?
 	float NormalWalkSpeed;
 
 	// ��ũ���� �� ī�޶� �̵�
@@ -109,10 +106,9 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	
-	// 김재훈 추가
+	// 김?�훈 추�?
 	void Interact(const FInputActionValue& Value);
 
-<<<<<<< HEAD
 	//�ɷ�ġ
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats")
 	float HP;
@@ -170,10 +166,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
 	void LevelUp();
 
-=======
-	// 상호작용 거리
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
-	float TraceDistance = 500.0f; // 기본값을 500으로 설정
->>>>>>> Develop
+	float TraceDistance = 500.0f; // 기본값을 500?�로 ?�정
+
 	
 };
