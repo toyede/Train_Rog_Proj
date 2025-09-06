@@ -277,19 +277,19 @@ void ATrainCharacter::RemapKey(UInputAction* InputAction, FKey OldKey, FKey NewK
 }
 
 // === 스탯 증가 함수들 === //
-int ATrainCharacter::IncreaseHP()
+float ATrainCharacter::IncreaseHP()
 {
     HP += HPStack * 2;
     return HP;
 }
 
-int ATrainCharacter::IncreasePower()
+float ATrainCharacter::IncreasePower()
 {
     Power += PowerStack * 2;
     return Power;
 }
 
-int ATrainCharacter::IncreaseDefense()
+float ATrainCharacter::IncreaseDefense()
 {
     Defense += DefenseStack * 2;
     return Defense;
@@ -301,9 +301,9 @@ float ATrainCharacter::IncreaseAttackSpeed()
     return AttackSpeed;
 }
 
-float ATrainCharacter::IncreaseCriticalChance()
+int ATrainCharacter::IncreaseCriticalChance()
 {
-    CriticalChance += CriticalChanceStack * 0.01f;
+    CriticalChance += CriticalChanceStack;
     return CriticalChance;
 }
 
@@ -315,17 +315,56 @@ float ATrainCharacter::IncreaseCriticalDamage()
 
 void ATrainCharacter::LevelUp()
 {
-    
+    EXP = 0;
+    MaxEXP += 50;
+    Level++;
 }
 
-float ATrainCharacter::TakeDamage(float weaponDamage, int weaponConst)
+float ATrainCharacter::DecreaseHP()
+{
+    HP -= HPStack * 2;
+    return HP;
+}
+
+float ATrainCharacter::DecreasePower()
+{
+    Power -= PowerStack * 2;
+    return Power;
+}
+
+float ATrainCharacter::DecreaseDefense()
+{
+    Defense -= DefenseStack * 2;
+    return Defense;
+}
+
+float ATrainCharacter::DecreaseAttackSpeed()
+{
+    AttackSpeed -= AttackSpeedStack * 0.02f;
+    return AttackSpeed;
+}
+
+int ATrainCharacter::DecreaseCriticalChance()
+{
+    CriticalChance -= CriticalChanceStack;
+    return CriticalChance;
+}
+
+float ATrainCharacter::DecreaseCriticalDamage()
+{
+    CriticalDamage -= CriticalDamageStack * 0.05f;
+    return CriticalDamage;
+}
+
+float ATrainCharacter::TakeDamage(float weaponDamage, float weaponConst, int criChance, float cirDam, bool cri)
 {
     float totalDamage = weaponDamage + Power * weaponConst;
 
     int Critical = rand() % 100;
-    if (Critical <= CriticalChance)
+    if (cri == true && Critical <= CriticalChance + criChance)
     {
-        totalDamage += totalDamage * CriticalDamage;
+        totalDamage += totalDamage * (CriticalDamage + cirDam);
+        totalDamage = FMath::RoundToFloat(totalDamage * 10.0f) / 10.0f;
         GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::White, TEXT("크리티컬 데미지"));
     }
     return totalDamage;
