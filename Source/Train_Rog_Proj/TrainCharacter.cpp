@@ -279,37 +279,37 @@ void ATrainCharacter::RemapKey(UInputAction* InputAction, FKey OldKey, FKey NewK
 // === 스탯 증가 함수들 === //
 float ATrainCharacter::IncreaseHP()
 {
-    HP += HPStack * 2;
+    HP += 2;
     return HP;
 }
 
 float ATrainCharacter::IncreasePower()
 {
-    Power += PowerStack * 2;
+    Power += 2;
     return Power;
 }
 
 float ATrainCharacter::IncreaseDefense()
 {
-    Defense += DefenseStack * 2;
+    Defense += 2;
     return Defense;
 }
 
 float ATrainCharacter::IncreaseAttackSpeed()
 {
-    AttackSpeed += AttackSpeedStack * 0.02f;
+    AttackSpeed += 0.02f;
     return AttackSpeed;
 }
 
 int ATrainCharacter::IncreaseCriticalChance()
 {
-    CriticalChance += CriticalChanceStack;
+    CriticalChance += 1;
     return CriticalChance;
 }
 
 float ATrainCharacter::IncreaseCriticalDamage()
 {
-    CriticalDamage += CriticalDamageStack * 0.05f;
+    CriticalDamage += 0.05f;
     return CriticalDamage;
 }
 
@@ -322,37 +322,37 @@ void ATrainCharacter::LevelUp()
 
 float ATrainCharacter::DecreaseHP()
 {
-    HP -= HPStack * 2;
+    HP -= 2;
     return HP;
 }
 
 float ATrainCharacter::DecreasePower()
 {
-    Power -= PowerStack * 2;
+    Power -= 2;
     return Power;
 }
 
 float ATrainCharacter::DecreaseDefense()
 {
-    Defense -= DefenseStack * 2;
+    Defense -= 2;
     return Defense;
 }
 
 float ATrainCharacter::DecreaseAttackSpeed()
 {
-    AttackSpeed -= AttackSpeedStack * 0.02f;
+    AttackSpeed -= 0.02f;
     return AttackSpeed;
 }
 
 int ATrainCharacter::DecreaseCriticalChance()
 {
-    CriticalChance -= CriticalChanceStack;
+    CriticalChance -= 1;
     return CriticalChance;
 }
 
 float ATrainCharacter::DecreaseCriticalDamage()
 {
-    CriticalDamage -= CriticalDamageStack * 0.05f;
+    CriticalDamage -=  0.05f;
     return CriticalDamage;
 }
 
