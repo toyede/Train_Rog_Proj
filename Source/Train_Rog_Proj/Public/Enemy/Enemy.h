@@ -6,6 +6,18 @@
 #include "GameFramework/Character.h"
 #include "Enemy.generated.h"
 
+//스테이지 구분 임시 ENUM
+
+UENUM(BlueprintType)
+enum class STAGE : uint8
+{
+	STAGE_1 UMETA(DisplayName = "STAGE 1"),
+	STAGE_2 UMETA(DisplayName = "STAGE 2"),
+	STAGE_3 UMETA(DisplayName = "STAGE 3"),
+	STAGE_4 UMETA(DisplayName = "STAGE 4"),
+	STAGE_5 UMETA(DisplayName = "STAGE 5")
+};
+
 /**
  * 적 몬스터 부모 클래스
  */
@@ -38,6 +50,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	class UWidgetComponent* HPBar;
 
+	//능력치 설정 스테이지 변수
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	STAGE CurrentStage = STAGE::STAGE_1;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -66,6 +82,14 @@ public:
 	//월드에서 타겟 클래스의 인스턴스를 찾는 함수
 	UFUNCTION(BlueprintCallable)
 	bool FindTarget();
+
+	UFUNCTION(BlueprintCallable)
+	float GetRandomStat(float standard, float offset);
+
+	UFUNCTION(BlueprintCallable)
+	void DebugDisplay(float Duration);
+
+	FColor DebugColor = FColor::MakeRandomColor();
 
 };
 

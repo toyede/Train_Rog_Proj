@@ -62,3 +62,14 @@ void UHealthComponent::DecreaseHP(float amount)
 	}
 }
 
+//Standard : 기준값, Offset : % >> ex)공격력 20, 랜덤 +-5% -> Standard = 20, Offset = 0.05
+float UHealthComponent::GetRandomStat(float Standard, float Offset)
+{
+	float Result = Standard;
+	//랜덤 +- 결정
+	int32 Sign = FMath::RandBool() ? 1 : -1;
+	Result = Standard + (Sign * Offset);
+	
+	return Result;
+}
+

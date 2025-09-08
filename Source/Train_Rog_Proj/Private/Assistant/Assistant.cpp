@@ -99,7 +99,7 @@ void AAssistant::Attack()
 	{
 		if (Boo->HealthComponent)
 		{
-			Boo->HealthComponent->DecreaseHP(AttackPower);
+			Boo->ApplyDamage(Boo, AttackPower);
 		} else
 		{
 			UE_LOG(LogTemp, Warning, TEXT("No Health Component"))
