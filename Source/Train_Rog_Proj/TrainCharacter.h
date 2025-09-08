@@ -150,7 +150,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float IncreaseAttackSpeed();
     UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") int IncreaseCriticalChance();
     UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float IncreaseCriticalDamage();
-    
+    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float IncreaseMaxHP();
     /** 스탯 감소 함수들 */
     UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float DecreaseHP();
     UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float DecreasePower();
@@ -158,7 +158,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float DecreaseAttackSpeed();
     UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") int DecreaseCriticalChance();
     UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float DecreaseCriticalDamage();
-
+    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float DecreaseMaxHP();
     /** 레벨업 함수 */
     UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
     void LevelUp();

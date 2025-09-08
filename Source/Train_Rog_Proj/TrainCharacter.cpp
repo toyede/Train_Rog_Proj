@@ -283,6 +283,12 @@ float ATrainCharacter::IncreaseHP()
     return HP;
 }
 
+float ATrainCharacter::IncreaseMaxHP()
+{
+    MaxHP += 2;
+    return MaxHP;
+}
+
 float ATrainCharacter::IncreasePower()
 {
     Power += 2;
@@ -324,6 +330,12 @@ float ATrainCharacter::DecreaseHP()
 {
     HP -= 2;
     return HP;
+}
+
+float ATrainCharacter::DecreaseMaxHP()
+{
+    MaxHP -= 2;
+    return MaxHP;
 }
 
 float ATrainCharacter::DecreasePower()
