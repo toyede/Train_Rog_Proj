@@ -4,6 +4,7 @@
 #include "Assistant/Assistant.h"
 #include "Components/HealthComponent.h"
 #include "Enemy/Enemy.h"
+#include "Kismet/GameplayStatics.h"
 #include "UObject/FastReferenceCollector.h"
 
 // Sets default values
@@ -99,7 +100,14 @@ void AAssistant::Attack()
 	{
 		if (Boo->HealthComponent)
 		{
-			Boo->ApplyDamage(Boo, AttackPower);
+			//Boo->ApplyDamage(Boo, AttackPower);
+			UGameplayStatics::ApplyDamage(
+				Boo,
+				AttackPower,
+				Boo->GetController(),
+				this,
+				NULL
+				);
 		} else
 		{
 			UE_LOG(LogTemp, Warning, TEXT("No Health Component"))

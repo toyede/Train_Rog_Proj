@@ -70,9 +70,10 @@ public:
 	void Attack();
 	virtual void Attack_Implementation();
 
+	//Deprecated
 	//입력되는 TargetActor에 대미지를 적용하는 함수 (Health 컴포넌트가 있을 시 체력 감소)
-	UFUNCTION(BlueprintCallable, Category = Attack)
-	void ApplyDamage(AActor* TargetActor, float Damage);
+	//UFUNCTION(BlueprintCallable, Category = Attack)
+	//void ApplyDamage(AActor* TargetActor, float Damage);
 
 	//사망 함수 - C++과 블루프린트 모두에서 구현 가능
 	UFUNCTION(BlueprintNativeEvent)
@@ -91,6 +92,8 @@ public:
 
 	FColor DebugColor = FColor::MakeRandomColor();
 
+	//대미지 수신 함수
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 };
 
 
