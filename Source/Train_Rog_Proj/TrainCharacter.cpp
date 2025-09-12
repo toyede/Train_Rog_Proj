@@ -1,129 +1,133 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "TrainCharacter.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Camera/CameraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "DrawDebugHelpers.h"
+#include <cstdlib>
+#include <ctime>
+//#include "InteractInterface.h"
 
-// Sets default values
+// 캐릭터 클래스의 기본값 세팅
 ATrainCharacter::ATrainCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+    // 매 프레임 Tick() 호출 여부
+    PrimaryActorTick.bCanEverTick = true;
 
-    // Spring Arm ???? ?? ????
+    // ► 카메라 붐(SpringArm) 생성 및 캐릭터에 부착
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(RootComponent);
-    CameraBoom->TargetArmLength = 300.0f; // ?????? ???? ??? ????
-	CameraBaseLength = CameraBoom->TargetArmLength; // ?? ???? ???? ????
-    //CameraBoom->bUsePawnControlRotation = true; // ?????? ???????? ???
-    CameraBoom->bUsePawnControlRotation = false; // ?????? ??? ????
+
+    // 카메라 기본 거리
+    CameraBoom->TargetArmLength = 300.0f;
+    CameraBaseLength = CameraBoom->TargetArmLength;
+
+    // 카메라 회전 제어 (플레이어 입력에 따라 움직일지)
+    CameraBoom->bUsePawnControlRotation = false;
     CameraBoom->bInheritPitch = true;
     CameraBoom->bInheritYaw = true;
     CameraBoom->bInheritRoll = true;
 
-    // Camera ???? ?? Spring Arm?? ????
+    // 카메라 컴포넌트 생성 및 연결
     FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
     FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-    FollowCamera->bUsePawnControlRotation = false; // ????? ???? ???X
+    FollowCamera->bUsePawnControlRotation = false;
 
-    // ?? ??? ???
+    // 기본 이동속도 저장
     NormalWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
 
-    // ??????? ?? ???? ???
+    // 기본 카메라 오프셋
     DefaultCameraOffset = CameraBoom->TargetOffset;
     CrouchCameraOffset = DefaultCameraOffset + FVector(0.f, 0.f, -30.f);
 
-	// ????? ??? ????
+    // 캐릭터 회전 설정
     bUseControllerRotationPitch = true;
     bUseControllerRotationYaw = true;
-    bUseControllerRotationRoll = false;  // ????, ???? ????? ?????(??) ????? ???? X
-    GetCharacterMovement()->bOrientRotationToMovement = false;  // ?????? ?? ???????? ???? ???
-    GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);  // ??? ???(???? ????)
+    bUseControllerRotationRoll = false;
+
+    GetCharacterMovement()->bOrientRotationToMovement = false;
+    GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
 }
 
-// Called when the game starts or when spawned
+// 게임 시작 시 초기화
 void ATrainCharacter::BeginPlay()
 {
-	Super::BeginPlay();
-	
-    // ?÷???? ?????? ????????
+    Super::BeginPlay();
+
+    // Enhanced Input 맵핑 등록
     if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
     {
-        // Enhanced Input Subsystem ???????? (???? ?÷???? ????)
         if (ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
         {
-            UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer);
-
-            // Mapping Context?? ???¿? ????? ???? ???
+            UEnhancedInputLocalPlayerSubsystem* Subsystem =
+                ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer);
+            
             if (Subsystem && DefaultMappingContext)
             {
-                // 0?? ?? ?????? (????? ???????? ??)
                 Subsystem->AddMappingContext(DefaultMappingContext, 0);
             }
         }
     }
+
+    // 컨트롤러 회전 초기화
     if (Controller)
     {
-        // ???????? ??????? ??? (Pitch: 0, Yaw: 0, Roll: 0)???? ????????.
-        // ????? ??? ???? ???? ?? ???? ?????? ???? ????.
         Controller->SetControlRotation(FRotator(0.f, 0.f, 0.f));
     }
+
+    // 난수 초기화
+    srand(static_cast<unsigned int>(time(NULL)));
 }
 
-// Called every frame
+// 매 프레임 호출
 void ATrainCharacter::Tick(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
-
+    Super::Tick(DeltaTime);
 }
 
-// Called to bind functionality to input
+// 입력 바인딩
 void ATrainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-    // Enhanced Input Component?? ?????
+    Super::SetupPlayerInputComponent(PlayerInputComponent);
+
     UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+
+    // ▶ 이동
     if (EnhancedInputComponent && MoveAction)
-    {
-        // ??? ??? ?????
         EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Move);
 
-
-	}
-
-    // ???? ??? ?????
+    // ▶ 점프
     if (JumpAction)
     {
         EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ATrainCharacter::StartJump);
         EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ATrainCharacter::StopJump);
     }
-    // ??????? ??? ?????
+
+    // ▶ 앉기
     if (CrouchAction)
     {
         EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ATrainCharacter::StartCrouch);
         EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ATrainCharacter::StopCrouch);
-	}
-    // ?? ??? ?????
+    }
+
+    // ▶ 줌
     if (Zoom)
     {
         EnhancedInputComponent->BindAction(Zoom, ETriggerEvent::Started, this, &ATrainCharacter::StartZoom);
         EnhancedInputComponent->BindAction(Zoom, ETriggerEvent::Completed, this, &ATrainCharacter::StopZoom);
     }
 
-	// Look ??? ?????
+    // ▶ 시점 이동(마우스)
     if (LookAction)
-    {
         EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Look);
-	}
 
-    // 김재훈 추가
+    // ▶ 상호작용 (개발자 추가)
     if (InteractAction)
-    {
         EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Interact);
-	}
 
+    // ▶ 달리기
     if (RunAction)
     {
         EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Started, this, &ATrainCharacter::StartRun);
@@ -131,193 +135,137 @@ void ATrainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
     }
 }
 
+// =================== 캐릭터 동작 =================== //
+
+// 이동 처리
 void ATrainCharacter::Move(const FInputActionValue& Value)
 {
     FVector2D MovementVector = Value.Get<FVector2D>();
     if (Controller == nullptr || MovementVector.IsNearlyZero())
         return;
 
-    // ???? ???? ??? ????????
+    // 카메라 기준 방향 벡터 구함
     FRotator CameraRotation = Controller->GetControlRotation();
-    FRotator YawRotation(0.f, CameraRotation.Yaw, 0.f); // Pitch, Roll ????
+    FRotator YawRotation(0.f, CameraRotation.Yaw, 0.f);
 
-    // Forward / Right ???? ???
     FVector ForwardDir = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-    FVector RightDir = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+    FVector RightDir   = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-    // ???? ??? ????
     FVector MoveDirection = ForwardDir * MovementVector.Y + RightDir * MovementVector.X;
     MoveDirection.Normalize();
 
-    // ???
     AddMovementInput(MoveDirection, 1.0f);
 
-    // ?????? ??? ???????? ???
+    // 이동하는 방향을 바라보도록 회전 보간
     FRotator TargetRotation = MoveDirection.Rotation();
-    FRotator CurrentRotation = GetActorRotation();
-
-    // ????? ??? (???? ??????? ???? ????)
-    SetActorRotation(FMath::RInterpTo(CurrentRotation, TargetRotation, GetWorld()->GetDeltaSeconds(), 10.f));
+    SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRotation, GetWorld()->GetDeltaSeconds(), 10.f));
 }
 
-void ATrainCharacter::StartJump()
-{
-    Jump(); // ???? ???? ??? ???
-}
+// 점프 시작
+void ATrainCharacter::StartJump() { Jump(); }
 
-void ATrainCharacter::StopJump()
-{
-    StopJumping(); // ???? ????
-}
+// 점프 종료
+void ATrainCharacter::StopJump() { StopJumping(); }
 
+// 앉기 시작
 void ATrainCharacter::StartCrouch()
 {
     Crouch();
-
-    // ??? ????
     GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed * 0.5f;
-
-    // ???? ???????
-    if (CameraBoom)
-    {
-        CameraBoom->TargetOffset = CrouchCameraOffset;
-    }
+    CameraBoom->TargetOffset = CrouchCameraOffset;
 }
 
+// 앉기 해제
 void ATrainCharacter::StopCrouch()
 {
     UnCrouch();
-
-    // ??? ????
     GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
-
-    // ???? ???????
-    if (CameraBoom)
-    {
-        CameraBoom->TargetOffset = DefaultCameraOffset;
-    }
+    CameraBoom->TargetOffset = DefaultCameraOffset;
 }
 
-
+// 줌 인/아웃
 void ATrainCharacter::ZoomIn()
 {
-    // ???? ?? ??
-	CameraBaseLength = CameraBoom->TargetArmLength;
-	CameraBoom->TargetArmLength = -100.0f; // ????? ?? ?? ????? ????
+    CameraBaseLength = CameraBoom->TargetArmLength;
+    CameraBoom->TargetArmLength = -100.f;
     bIsZooming = true;
 }
+
 void ATrainCharacter::ZoomOut()
 {
-    // ???? ?? ???
     CameraBoom->TargetArmLength = CameraBaseLength;
     bIsZooming = false;
 }
-void ATrainCharacter::StartZoom()
-{
-    // ?? ??
-    ZoomIn();
-}
-void ATrainCharacter::StopZoom()
-{
-    // ?? ???
-    ZoomOut();
-}
 
+void ATrainCharacter::StartZoom() { ZoomIn(); }
+void ATrainCharacter::StopZoom()  { ZoomOut(); }
+
+// 마우스 Look 입력 처리
 void ATrainCharacter::Look(const FInputActionValue& Value)
 {
     FVector2D LookAxis = Value.Get<FVector2D>();
 
-    float YawSensitivity = 1.0f;
-    float PitchSensitivity = 1.0f;
+    AddControllerYawInput(LookAxis.X);  // 좌우 회전
 
-    // Yaw ????? ???? ????
-    AddControllerYawInput(LookAxis.X * YawSensitivity);
-
-    // ???? ?????? ?????
+    // 상하 회전 제한 (-45도 ~ 45도)
     FRotator ControlRot = Controller->GetControlRotation();
-
-    // ????? Pitch ???
-    float NewPitch = ControlRot.Pitch + LookAxis.Y * PitchSensitivity * -1.0f;
-
-    // ???? Pitch?? 360?? ??????? 270?? ????? ?????????? ?????
-    // ???? ClampAngle ??? (??? ???? ???? ????)
-    NewPitch = FMath::ClampAngle(NewPitch, -45.0f, 45.0f);
-
-    // ?????? ????? ????
+    float NewPitch = FMath::ClampAngle(ControlRot.Pitch + LookAxis.Y * -1.0f, -45.0f, 45.0f);
     ControlRot.Pitch = NewPitch;
     Controller->SetControlRotation(ControlRot);
 }
 
-// 김재훈 추가
+// 상호작용: 카메라 전방 라인트레이스 검사
 void ATrainCharacter::Interact(const FInputActionValue& Value)
 {
-    if (Controller == nullptr || FollowCamera == nullptr)
-	{
-		return;
-	}
+    if (!Controller || !FollowCamera) return;
 
-	// 라인 트레이스 시작점과 끝점 계산
-	FVector StartLocation = FollowCamera->GetComponentLocation();
-	FVector ForwardVector = FollowCamera->GetForwardVector();
-	FVector EndLocation = StartLocation + (ForwardVector * TraceDistance);
+    FVector StartLocation = FollowCamera->GetComponentLocation();
+    FVector ForwardVector = FollowCamera->GetForwardVector();
+    FVector EndLocation = StartLocation + (ForwardVector * TraceDistance);
 
-	// 충돌 체크용 변수 세팅
-	FHitResult HitResult;
-	FCollisionQueryParams CollisionParams;
-	CollisionParams.AddIgnoredActor(this); // 자기 자신은 트레이스에서 제외
+    FHitResult HitResult;
+    FCollisionQueryParams CollisionParams;
+    CollisionParams.AddIgnoredActor(this);
 
-	// 라인 트레이스 실행
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
-		HitResult,
-		StartLocation,
-		EndLocation,
-		ECC_Visibility, // Visibility 채널에 있는 오브젝트만 감지
-		CollisionParams
-	);
+    bool bHit = GetWorld()->LineTraceSingleByChannel(
+        HitResult, StartLocation, EndLocation,
+        ECC_Visibility, CollisionParams
+    );
 
-	DrawDebugLine(GetWorld(), StartLocation, EndLocation, bHit ? FColor::Green : FColor::Red, false, 1.0f, 0, 1.0f);
+    // 디버그 라인 표시
+    DrawDebugLine(GetWorld(), StartLocation, EndLocation, bHit ? FColor::Green : FColor::Red, false, 1.0f, 0, 1.0f);
 
-	// 무언가에 부딪혔는지 확인
-	if (bHit)
-	{
-		// 부딪힌 액터 가져오기
-		AActor* HitActor = HitResult.GetActor();
-
-		// 부딪힌 액터가 InteractInterface를 구현했는지 확인
-		if (HitActor && HitActor->GetClass()->ImplementsInterface(UInteractInterface::StaticClass()))
-		{
-            // 첫번째 인자(HitActor)는 Interact함수를 실행할 객체, this는 Interact함수에서 인자로 받을 객체.
-			IInteractInterface::Execute_Interact(HitActor, this);
-            // UE_LOG(LogTemp, Warning, TEXT("Debug"));
-		}
-	}
+    if (bHit)
+    {
+        AActor* HitActor = HitResult.GetActor();
+        if (HitActor && HitActor->GetClass()->ImplementsInterface(UInteractInterface::StaticClass()))
+        {
+            IInteractInterface::Execute_Interact(HitActor, this);
+        }
+    }
 }
 
+// 달리기
 void ATrainCharacter::StartRun()
 {
-    // �޸��� ����
     bIsRunning = true;
     GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed * RunSpeedMultiplier;
 }
 
 void ATrainCharacter::StopRun()
 {
-    // �޸��� ����
     bIsRunning = false;
     GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
 }
 
+// === 키 리매핑 기능 === //
 void ATrainCharacter::RemapKey(UInputAction* InputAction, FKey OldKey, FKey NewKey)
 {
     if (!DefaultMappingContext || !InputAction) return;
 
-    // 1. ���� Ű ���
     DefaultMappingContext->UnmapKey(InputAction, OldKey);
-
-    // 2. �� Ű ����
     DefaultMappingContext->MapKey(InputAction, NewKey);
 
-    // 3. ���� ����
     if (APlayerController* PC = Cast<APlayerController>(Controller))
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
@@ -326,4 +274,115 @@ void ATrainCharacter::RemapKey(UInputAction* InputAction, FKey OldKey, FKey NewK
             Subsystem->AddMappingContext(DefaultMappingContext, 0);
         }
     }
+}
+
+// === 스탯 증가 함수들 === //
+float ATrainCharacter::IncreaseHP()
+{
+    HP += 2;
+    return HP;
+}
+
+float ATrainCharacter::IncreaseMaxHP()
+{
+    MaxHP += 2;
+    return MaxHP;
+}
+
+float ATrainCharacter::IncreasePower()
+{
+    Power += 2;
+    return Power;
+}
+
+float ATrainCharacter::IncreaseDefense()
+{
+    Defense += 2;
+    return Defense;
+}
+
+float ATrainCharacter::IncreaseAttackSpeed()
+{
+    AttackSpeed += 0.02f;
+    return AttackSpeed;
+}
+
+int ATrainCharacter::IncreaseCriticalChance()
+{
+    CriticalChance += 1;
+    return CriticalChance;
+}
+
+float ATrainCharacter::IncreaseCriticalDamage()
+{
+    CriticalDamage += 0.05f;
+    return CriticalDamage;
+}
+
+void ATrainCharacter::LevelUp()
+{
+    EXP = 0;
+    MaxEXP += 50;
+    Level++;
+}
+
+float ATrainCharacter::DecreaseHP()
+{
+    HP -= 2;
+    return HP;
+}
+
+float ATrainCharacter::DecreaseMaxHP()
+{
+    MaxHP -= 2;
+    return MaxHP;
+}
+
+float ATrainCharacter::DecreasePower()
+{
+    Power -= 2;
+    return Power;
+}
+
+float ATrainCharacter::DecreaseDefense()
+{
+    Defense -= 2;
+    return Defense;
+}
+
+float ATrainCharacter::DecreaseAttackSpeed()
+{
+    AttackSpeed -= 0.02f;
+    return AttackSpeed;
+}
+
+int ATrainCharacter::DecreaseCriticalChance()
+{
+    CriticalChance -= 1;
+    return CriticalChance;
+}
+
+float ATrainCharacter::DecreaseCriticalDamage()
+{
+    CriticalDamage -=  0.05f;
+    return CriticalDamage;
+}
+
+float ATrainCharacter::TakeDamage(float weaponDamage, float weaponConst, int criChance, float cirDam, bool cri)
+{
+    float totalDamage = weaponDamage + Power * weaponConst;
+
+    int Critical = rand() % 100;
+    if (cri == true && Critical <= CriticalChance + criChance)
+    {
+        totalDamage += totalDamage * (CriticalDamage + cirDam);
+        totalDamage = FMath::RoundToFloat(totalDamage * 10.0f) / 10.0f;
+        GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::White, TEXT("크리티컬 데미지"));
+    }
+    return totalDamage;
+}
+
+void ATrainCharacter::HitDamage(float totalDamage)
+{
+    HP -= totalDamage;
 }
