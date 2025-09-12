@@ -382,3 +382,7 @@ float ATrainCharacter::TakeDamage(float weaponDamage, float weaponConst, int cri
     return totalDamage;
 }
 
+void ATrainCharacter::HitDamage(float totalDamage)
+{
+    HP -= totalDamage;
+}

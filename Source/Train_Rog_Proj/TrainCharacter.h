@@ -85,7 +85,7 @@ protected:
 
     // 줌 시 카메라 거리
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
-    float CameraZoomLengh;
+    float CameraZoomLength;
 
     // 앉았을 때 카메라 오프셋
     FVector DefaultCameraOffset;
@@ -166,5 +166,6 @@ public:
     /** 데미지 함수 */
     UFUNCTION(BlueprintCallable, Category = "Player Battle")
     float TakeDamage(float weaponDamage, float weaponConst, int criChance, float criDam, bool cri);
-    
+    UFUNCTION(BlueprintCallable, Category = "Player Battle")
+    void HitDamage(float totalDamage);
 };
