@@ -168,8 +168,64 @@ void UMapGenerator::ConnectNodes()
 {
 	UE_LOG(LogTemp, Log, TEXT("Starting connection generation..."));
 
-	// Phase 1: 모든 노드의 들어오는 연결 보장 (N+1 ← N)
-	int32 GuaranteedConnections = 0;
+	// Phase 1: 각 노드의 나가는 연결 생성 (N → N+1)
+	int32 PrimaryConnections = 0;
+
+	for (int32 Depth = 0; Depth < 6; Depth++) // 깊이 6은 보스 노드라서 제외
+	{
+		TArray<UMapNode*> CurrentDepthNodes = GetNodesAtDepth(Depth);
+		TArray<UMapNode*> NextDepthNodes = GetNodesAtDepth(Depth + 1);
+
+		if (NextDepthNodes.Num() == 0)
+		{
+			continue;
+		}
+
+		for (UMapNode* CurrentNode : CurrentDepthNodes)
+		{
+			// 연결 가능한 노드들 찾기
+			TArray<UMapNode*> PossibleConnections;
+			for (UMapNode* NextNode : NextDepthNodes)
+			{
+				if (CurrentNode->CanConnectTo(NextNode))
+				{
+					PossibleConnections.Add(NextNode);
+				}
+			}
+
+			if (PossibleConnections.Num() == 0)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Node(%d,%d) has no possible connections!"),
+					CurrentNode->Position.Depth, CurrentNode->Position.Row);
+				continue;
+			}
+
+			// 최소 연결 수 보장
+			int32 MinConnections = FMath::Min(GenerationSettings.MinConnectionsPerNode, PossibleConnections.Num());
+			int32 MaxConnections = FMath::Min(GenerationSettings.MaxConnectionsPerNode, PossibleConnections.Num());
+
+			// 실제 연결 개수 결정
+			int32 ConnectionCount = RandomStream.RandRange(MinConnections, MaxConnections);
+
+			// 연결할 노드들을 랜덤으로 선택
+			ShuffleArray(PossibleConnections);
+
+			for (int32 i = 0; i < ConnectionCount; i++)
+			{
+				CurrentNode->AddConnection(PossibleConnections[i]);
+				PrimaryConnections++;
+			}
+
+			UE_LOG(LogTemp, Log, TEXT("Phase 1: Node(%d,%d) created %d connections [Total: %d]"),
+				CurrentNode->Position.Depth, CurrentNode->Position.Row, ConnectionCount,
+				CurrentNode->ConnectedNodes.Num());
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Phase 1 complete: Added %d primary connections"), PrimaryConnections);
+
+	// Phase 2: 고립 노드 구조 - 들어오는 연결이 없는 노드들을 위한 안전망 (N+1 ← N)
+	int32 SafetyConnections = 0;
 
 	for (int32 Depth = 1; Depth <= 6; Depth++)
 	{
@@ -178,44 +234,56 @@ void UMapGenerator::ConnectNodes()
 
 		if (PreviousDepthNodes.Num() == 0)
 		{
-			continue; // 이전 깊이에 노드가 없으면 건너뛰기
+			continue;
 		}
 
 		for (UMapNode* CurrentNode : CurrentDepthNodes)
 		{
-			// 모든 노드는 들어오는 연결이 최소 1개 필요
+			// 들어오는 연결이 없는 고립 노드 확인
 			if (CurrentNode->PreviousNodes.Num() == 0)
 			{
-				// 이전 깊이에서 연결 수가 가장 적은 노드를 찾아서 연결
-				UMapNode* SelectedPreviousNode = SelectNodeWithFewestConnections(PreviousDepthNodes);
-
-				if (SelectedPreviousNode && SelectedPreviousNode->CanConnectTo(CurrentNode))
+				// 연결 가능한 이전 노드들 찾기
+				TArray<UMapNode*> PossibleSources;
+				for (UMapNode* PrevNode : PreviousDepthNodes)
 				{
-					SelectedPreviousNode->AddConnection(CurrentNode);
-					GuaranteedConnections++;
+					if (PrevNode->CanConnectTo(CurrentNode))
+					{
+						PossibleSources.Add(PrevNode);
+					}
+				}
 
-					UE_LOG(LogTemp, Log, TEXT("Guaranteed connection: Node(%d,%d) -> Node(%d,%d) [Total outgoing: %d]"),
-						SelectedPreviousNode->Position.Depth, SelectedPreviousNode->Position.Row,
-						CurrentNode->Position.Depth, CurrentNode->Position.Row,
-						SelectedPreviousNode->ConnectedNodes.Num());
+				if (PossibleSources.Num() > 0)
+				{
+					// 연결 수가 가장 적은 노드 우선 선택
+					UMapNode* SelectedSource = SelectNodeWithFewestConnections(PossibleSources);
+
+					if (SelectedSource)
+					{
+						SelectedSource->AddConnection(CurrentNode);
+						SafetyConnections++;
+
+						UE_LOG(LogTemp, Log, TEXT("Phase 2 Safety: Node(%d,%d) -> Node(%d,%d) [Rescued isolated node]"),
+							SelectedSource->Position.Depth, SelectedSource->Position.Row,
+							CurrentNode->Position.Depth, CurrentNode->Position.Row);
+					}
 				}
 				else
 				{
-					UE_LOG(LogTemp, Warning, TEXT("Failed to add guaranteed connection for node at depth %d, row %d"),
+					UE_LOG(LogTemp, Error, TEXT("Failed to rescue isolated node at depth %d, row %d - No possible connections!"),
 						CurrentNode->Position.Depth, CurrentNode->Position.Row);
 				}
 			}
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Phase 1 complete: Added %d guaranteed connections"), GuaranteedConnections);
+	UE_LOG(LogTemp, Log, TEXT("Phase 2 complete: Added %d safety connections"), SafetyConnections);
 
-	// Phase 2: 각 노드의 나가는 연결 보장 (N → N+1)
+	// Phase 3: 추가 연결 생성 (선택적)
 	int32 AdditionalConnections = 0;
 
 	if (GenerationSettings.bAllowAdditionalConnections)
 	{
-		for (int32 Depth = 0; Depth < 6; Depth++) // 깊이 6은 보스 노드라서 제외
+		for (int32 Depth = 0; Depth < 6; Depth++)
 		{
 			TArray<UMapNode*> CurrentDepthNodes = GetNodesAtDepth(Depth);
 			TArray<UMapNode*> NextDepthNodes = GetNodesAtDepth(Depth + 1);
@@ -229,60 +297,25 @@ void UMapGenerator::ConnectNodes()
 			{
 				int32 CurrentConnections = CurrentNode->ConnectedNodes.Num();
 
-				// 최소 연결 수 체크
-				if (CurrentConnections < GenerationSettings.MinConnectionsPerNode)
-				{
-					// 연결 가능한 노드들 찾기 (이미 연결된 노드 제외)
-					TArray<UMapNode*> PossibleConnections;
-					for (UMapNode* NextNode : NextDepthNodes)
-					{
-						if (CurrentNode->CanConnectTo(NextNode) && !CurrentNode->ConnectedNodes.Contains(NextNode))
-						{
-							PossibleConnections.Add(NextNode);
-						}
-					}
-
-					if (PossibleConnections.Num() > 0)
-					{
-						// 최소 연결 수를 만족할 때까지 연결 추가
-						int32 NeededConnections = GenerationSettings.MinConnectionsPerNode - CurrentConnections;
-						int32 ActualConnections = FMath::Min(NeededConnections, PossibleConnections.Num());
-
-						// 랜덤으로 연결할 노드들 선택
-						ShuffleArray(PossibleConnections);
-
-						for (int32 i = 0; i < ActualConnections; i++)
-						{
-							CurrentNode->AddConnection(PossibleConnections[i]);
-							AdditionalConnections++;
-						}
-
-						UE_LOG(LogTemp, Log, TEXT("Minimum connections added: Node(%d,%d) added %d connections [Total: %d]"),
-							CurrentNode->Position.Depth, CurrentNode->Position.Row, ActualConnections,
-							CurrentNode->ConnectedNodes.Num());
-					}
-				}
-
-				// 최대 연결 수 범위에서 추가 연결 (선택적)
-				CurrentConnections = CurrentNode->ConnectedNodes.Num();
+				// 최대 연결 수 범위에서 추가 연결 기회
 				if (CurrentConnections < GenerationSettings.MaxConnectionsPerNode)
 				{
-					// 연결 가능한 노드들 찾기 (이미 연결된 노드 제외)
-					TArray<UMapNode*> PossibleConnections;
+					// 아직 연결하지 않은 노드들 찾기
+					TArray<UMapNode*> UnconnectedNodes;
 					for (UMapNode* NextNode : NextDepthNodes)
 					{
 						if (CurrentNode->CanConnectTo(NextNode) && !CurrentNode->ConnectedNodes.Contains(NextNode))
 						{
-							PossibleConnections.Add(NextNode);
+							UnconnectedNodes.Add(NextNode);
 						}
 					}
 
-					if (PossibleConnections.Num() > 0)
+					if (UnconnectedNodes.Num() > 0)
 					{
-						// 랜덤으로 추가 연결 개수 결정 (0 ~ 최대 가능 개수)
+						// 랜덤으로 추가 연결 개수 결정 (0 ~ 남은 가능 개수)
 						int32 MaxAdditional = FMath::Min(
 							GenerationSettings.MaxConnectionsPerNode - CurrentConnections,
-							PossibleConnections.Num()
+							UnconnectedNodes.Num()
 						);
 
 						int32 AdditionalCount = RandomStream.RandRange(0, MaxAdditional);
@@ -290,15 +323,15 @@ void UMapGenerator::ConnectNodes()
 						if (AdditionalCount > 0)
 						{
 							// 랜덤으로 추가 연결할 노드들 선택
-							ShuffleArray(PossibleConnections);
+							ShuffleArray(UnconnectedNodes);
 
 							for (int32 i = 0; i < AdditionalCount; i++)
 							{
-								CurrentNode->AddConnection(PossibleConnections[i]);
+								CurrentNode->AddConnection(UnconnectedNodes[i]);
 								AdditionalConnections++;
 							}
 
-							UE_LOG(LogTemp, Log, TEXT("Optional connections added: Node(%d,%d) added %d connections [Total: %d]"),
+							UE_LOG(LogTemp, Log, TEXT("Phase 3 Additional: Node(%d,%d) added %d extra connections [Total: %d]"),
 								CurrentNode->Position.Depth, CurrentNode->Position.Row, AdditionalCount,
 								CurrentNode->ConnectedNodes.Num());
 						}
@@ -307,15 +340,15 @@ void UMapGenerator::ConnectNodes()
 			}
 		}
 
-		UE_LOG(LogTemp, Log, TEXT("Phase 2 complete: Added %d additional connections"), AdditionalConnections);
+		UE_LOG(LogTemp, Log, TEXT("Phase 3 complete: Added %d additional connections"), AdditionalConnections);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("Phase 2 skipped: Additional connections disabled"));
+		UE_LOG(LogTemp, Log, TEXT("Phase 3 skipped: Additional connections disabled"));
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Connection generation complete: %d guaranteed + %d additional = %d total connections"),
-		GuaranteedConnections, AdditionalConnections, GuaranteedConnections + AdditionalConnections);
+	UE_LOG(LogTemp, Log, TEXT("Connection generation complete: %d primary + %d safety + %d additional = %d total connections"),
+		PrimaryConnections, SafetyConnections, AdditionalConnections, PrimaryConnections + SafetyConnections + AdditionalConnections);
 }
 
 /*

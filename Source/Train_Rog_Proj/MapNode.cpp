@@ -95,5 +95,24 @@ bool UMapNode::IsValidConnection(UMapNode* TargetNode) const
 		return false; // 연결된 노드의 깊이가 현재 노드보다 한 단계 아래여야 함
 	}
 
+	// 보스 노드로의 연결은 행 제약 완화 (모든 상점이 보스에 도달 가능)
+	if (TargetNode->NodeType == ENodeType::Boss)
+	{
+		return true;
+	}
+
+	// 시작 노드에서의 연결은 행 제약 완화 (모든 깊이1 노드에 도달 가능)
+	if (NodeType == ENodeType::Start)
+	{
+		return true;
+	}
+
+	// 교차 방지: 행 차이가 1 이하여야 함 (±1칸 범위 내에서만 연결 허용)
+	int32 RowDifference = FMath::Abs(TargetNode->Position.Row - Position.Row);
+	if (RowDifference > 1)
+	{
+		return false; // 너무 멀리 떨어진 행으로는 연결 불가 (교차 발생 방지)
+	}
+
 	return true; // 기본적으로 연결 가능
 }
