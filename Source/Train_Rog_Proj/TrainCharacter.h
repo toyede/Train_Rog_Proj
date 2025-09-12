@@ -85,7 +85,7 @@ protected:
 
     // 줌 시 카메라 거리
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
-    float CameraZoomLengh;
+    float CameraZoomLength;
 
     // 앉았을 때 카메라 오프셋
     FVector DefaultCameraOffset;
@@ -125,32 +125,47 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") float Power;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") float Defense;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") float AttackSpeed;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") float CriticalChance;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") int CriticalChance;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") float CriticalDamage;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") int Level;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") int EXP;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") int EXP = 0;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats") int MaxEXP = 100;
 
     /** 스탯 성장치 (레벨업 시 증가량) */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks") int HPStack;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks") int PowerStack;
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks") int DefenseStack;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks") float AttackSpeedStack;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks") float CriticalChanceStack;
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks") float CriticalDamageStack;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks") int AttackSpeedStack;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks") int CriticalChanceStack;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks") int CriticalDamageStack;
 
     /** 스탯 포인트 (유저가 직접 분배하는 포인트) */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
     int StatPoint;
 
     /** 스탯 증가 함수들 (Blueprint에서도 호출 가능) */
-    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") int IncreaseHP();
-    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") int IncreasePower();
-    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") int IncreaseDefense();
+    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float IncreaseHP();
+    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float IncreasePower();
+    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float IncreaseDefense();
     UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float IncreaseAttackSpeed();
-    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float IncreaseCriticalChance();
+    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") int IncreaseCriticalChance();
     UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float IncreaseCriticalDamage();
-
+    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float IncreaseMaxHP();
+    /** 스탯 감소 함수들 */
+    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float DecreaseHP();
+    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float DecreasePower();
+    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float DecreaseDefense();
+    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float DecreaseAttackSpeed();
+    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") int DecreaseCriticalChance();
+    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float DecreaseCriticalDamage();
+    UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") float DecreaseMaxHP();
     /** 레벨업 함수 */
     UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
     void LevelUp();
+    
+    /** 데미지 함수 */
+    UFUNCTION(BlueprintCallable, Category = "Player Battle")
+    float TakeDamage(float weaponDamage, float weaponConst, int criChance, float criDam, bool cri);
+    UFUNCTION(BlueprintCallable, Category = "Player Battle")
+    void HitDamage(float totalDamage);
 };

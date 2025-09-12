@@ -6,6 +6,8 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "DrawDebugHelpers.h"
+#include <cstdlib>
+#include <ctime>
 //#include "InteractInterface.h"
 
 // 캐릭터 클래스의 기본값 세팅
@@ -74,6 +76,9 @@ void ATrainCharacter::BeginPlay()
     {
         Controller->SetControlRotation(FRotator(0.f, 0.f, 0.f));
     }
+
+    // 난수 초기화
+    srand(static_cast<unsigned int>(time(NULL)));
 }
 
 // 매 프레임 호출
@@ -272,44 +277,112 @@ void ATrainCharacter::RemapKey(UInputAction* InputAction, FKey OldKey, FKey NewK
 }
 
 // === 스탯 증가 함수들 === //
-int ATrainCharacter::IncreaseHP()
+float ATrainCharacter::IncreaseHP()
 {
-    HP += HPStack * 2;
+    HP += 2;
     return HP;
 }
 
-int ATrainCharacter::IncreasePower()
+float ATrainCharacter::IncreaseMaxHP()
 {
-    Power += PowerStack * 2;
+    MaxHP += 2;
+    return MaxHP;
+}
+
+float ATrainCharacter::IncreasePower()
+{
+    Power += 2;
     return Power;
 }
 
-int ATrainCharacter::IncreaseDefense()
+float ATrainCharacter::IncreaseDefense()
 {
-    Defense += DefenseStack * 2;
+    Defense += 2;
     return Defense;
 }
 
 float ATrainCharacter::IncreaseAttackSpeed()
 {
-    AttackSpeed += AttackSpeedStack * 0.02f;
+    AttackSpeed += 0.02f;
     return AttackSpeed;
 }
 
-float ATrainCharacter::IncreaseCriticalChance()
+int ATrainCharacter::IncreaseCriticalChance()
 {
-    CriticalChance += CriticalChanceStack * 0.01f;
+    CriticalChance += 1;
     return CriticalChance;
 }
 
 float ATrainCharacter::IncreaseCriticalDamage()
 {
-    CriticalDamage += CriticalDamageStack * 0.05f;
+    CriticalDamage += 0.05f;
     return CriticalDamage;
 }
 
 void ATrainCharacter::LevelUp()
 {
-    
+    EXP = 0;
+    MaxEXP += 50;
+    Level++;
 }
 
+float ATrainCharacter::DecreaseHP()
+{
+    HP -= 2;
+    return HP;
+}
+
+float ATrainCharacter::DecreaseMaxHP()
+{
+    MaxHP -= 2;
+    return MaxHP;
+}
+
+float ATrainCharacter::DecreasePower()
+{
+    Power -= 2;
+    return Power;
+}
+
+float ATrainCharacter::DecreaseDefense()
+{
+    Defense -= 2;
+    return Defense;
+}
+
+float ATrainCharacter::DecreaseAttackSpeed()
+{
+    AttackSpeed -= 0.02f;
+    return AttackSpeed;
+}
+
+int ATrainCharacter::DecreaseCriticalChance()
+{
+    CriticalChance -= 1;
+    return CriticalChance;
+}
+
+float ATrainCharacter::DecreaseCriticalDamage()
+{
+    CriticalDamage -=  0.05f;
+    return CriticalDamage;
+}
+
+float ATrainCharacter::TakeDamage(float weaponDamage, float weaponConst, int criChance, float cirDam, bool cri)
+{
+    float totalDamage = weaponDamage + Power * weaponConst;
+
+    int Critical = rand() % 100;
+    if (cri == true && Critical <= CriticalChance + criChance)
+    {
+        totalDamage += totalDamage * (CriticalDamage + cirDam);
+        totalDamage = FMath::RoundToFloat(totalDamage * 10.0f) / 10.0f;
+        GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::White, TEXT("크리티컬 데미지"));
+    }
+    return totalDamage;
+}
+
+void ATrainCharacter::HitDamage(float totalDamage)
+{
+    HP -= totalDamage;
+}
