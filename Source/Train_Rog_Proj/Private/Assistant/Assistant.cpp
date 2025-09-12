@@ -4,6 +4,7 @@
 #include "Assistant/Assistant.h"
 #include "Components/HealthComponent.h"
 #include "Enemy/Enemy.h"
+#include "UObject/FastReferenceCollector.h"
 
 // Sets default values
 AAssistant::AAssistant()
@@ -18,6 +19,7 @@ void AAssistant::BeginPlay()
 {
 	Super::BeginPlay();
 
+	//게임 시작하면 탐색 시작 (탐색 타이머 실행)
 	GetWorld()->GetTimerManager().SetTimer(
 		SearchTimer,
 		this,
@@ -39,7 +41,10 @@ void AAssistant::SearchTarget()
 	FVector Start = GetActorLocation();
 	FRotator ActorRot = GetActorRotation();
 
-	AddActorLocalRotation(FRotator(0, 1, 0));
+	if (RotationSearch)
+	{
+		AddActorLocalRotation(FRotator(0, 1, 0));
+	}
 
 	//호 모양으로 설정한 개수 만큼 라인 트레이스
 	for (int i = 0; i < SearchLineNumber; i++)
@@ -92,13 +97,20 @@ void AAssistant::Attack()
 	
 	if (AEnemy* Boo = Cast<AEnemy>(Target))
 	{
-		Boo->HealthComponent->DecreaseHP(10);
+		if (Boo->HealthComponent)
+		{
+			Boo->ApplyDamage(Boo, AttackPower);
+		} else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("No Health Component"))
+		}
 	}
 	
 	//적이 죽었으면 공격 중단 후 탐색 재시작
 	if (!IsValid(Target))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ATTACK : Target Eliminated"));
+		Target = nullptr;
 		//공격 중단
 		GetWorld()->GetTimerManager().ClearTimer(AttackTimer);
 		//탐색 시작
