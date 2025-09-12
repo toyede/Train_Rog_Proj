@@ -73,3 +73,42 @@ float UHealthComponent::GetRandomStat(float Standard, float Offset)
 	return Result;
 }
 
+void UHealthComponent::IncreaseMaxHP(int stack)
+{
+	float increaseHP = 2;
+	if (stack <= 100)
+	{
+		MaxHP += increaseHP * 1.f;
+		CurrentHP += increaseHP * 1.f;
+	}
+	else if (stack <= 200)
+	{
+		MaxHP += increaseHP * 0.8f;
+		CurrentHP += increaseHP * 0.8f;
+	}
+	else if (stack <= 300)
+	{
+		MaxHP += increaseHP * 0.5f;
+		CurrentHP += increaseHP * 0.5f;
+	}
+}	
+
+void UHealthComponent::DecreaseMaxHP(int stack)
+{
+	float decreaseHP = 2;
+	if (stack <= 100)
+	{
+		MaxHP -= decreaseHP * 1.f;
+		CurrentHP -= decreaseHP * 1.f;
+	}
+	else if (stack <= 200)
+	{
+		MaxHP -= decreaseHP * 0.8f;
+		CurrentHP -= decreaseHP * 0.8f;
+	}
+	else if (stack <= 300)
+	{
+		MaxHP -= decreaseHP * 0.5f;
+		CurrentHP -= decreaseHP * 0.5f;
+	}
+}
