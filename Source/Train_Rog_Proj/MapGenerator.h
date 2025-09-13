@@ -118,6 +118,11 @@ protected:
 	void ConnectNodes();
 	//void ValidateAllNodesReachable(); EnsureAllNodesReachable로 대체
 	//void EnsureAllNodesReachable();
+
+	// 새로운 오버랩 그룹핑 연결 시스템
+	void ConnectWithNextNodeGrouping(const TArray<UMapNode*>& PreviousNodes, const TArray<UMapNode*>& NextNodes, int32 P, int32 N, int32& TotalConnections);
+	void ConnectWithPreviousNodeGrouping(const TArray<UMapNode*>& PreviousNodes, const TArray<UMapNode*>& NextNodes, int32 P, int32 N, int32& TotalConnections);
+
 	void UpdateNodeAccessibility();
 
 	TArray<UMapNode*> GetNormalNodes() const;
