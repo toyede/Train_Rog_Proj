@@ -401,8 +401,10 @@ void UMapGenerator::ConnectWithNextNodeGrouping(const TArray<UMapNode*>& Previou
 		}
 		else
 		{
-			// 그냥 1~3 사이에서 자유롭게 선택 (오버랩 고려 안함)
-			int32 MinSize = 1;
+			int32 RemainingGroups = P - i - 1;
+			int32 OtherGroupsMaxPossible = RemainingGroups * 3;
+
+			int32 MinSize = FMath::Max(1, RemainingNodes - OtherGroupsMaxPossible);
 			int32 MaxSize = 3;
 
 			// N이 작은 경우만 예외 처리
@@ -504,9 +506,17 @@ void UMapGenerator::ConnectWithReversedNodeGrouping(const TArray<UMapNode*>& Pre
 		}
 		else
 		{
-			// 1개 이상 자유롭게 선택
-			int32 MinSize = 1;
-			int32 MaxSize = FMath::Max(1, RemainingNodes - (N - i - 1)); // 다른 그룹들이 최소 1개씩
+			int32 RemainingGroups = P - i - 1;
+			int32 OtherGroupsMaxPossible = RemainingGroups * 3;
+
+			int32 MinSize = FMath::Max(1, RemainingNodes - OtherGroupsMaxPossible);
+			int32 MaxSize = 3;
+
+			// N이 작은 경우만 예외 처리
+			if (N <= 3)
+			{
+				MaxSize = FMath::Min(MaxSize, N);
+			}
 
 			GroupSizes[i] = RandomStream.RandRange(MinSize, MaxSize);
 			RemainingNodes -= GroupSizes[i];
