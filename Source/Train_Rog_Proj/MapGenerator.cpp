@@ -185,7 +185,17 @@ void UMapGenerator::ConnectNodes()
 
 		UE_LOG(LogTemp, Log, TEXT("Connecting Depth %d to %d: P=%d nodes, N=%d nodes"), Depth, Depth + 1, P, N);
 
-		if (P <= N)
+		if (Depth == 5)
+		{
+			// 보스 전 단계 특별 처리: 모든 노드가 보스 노드에 연결
+			for (UMapNode* PrevNode : PreviousDepthNodes)
+			{
+				PrevNode->AddConnection(NextDepthNodes[0]);
+				TotalConnections++;
+			}
+			UE_LOG(LogTemp, Log, TEXT("Boss connection: All %d shop nodes connected to boss"), P);
+		}
+		else if (P <= N)
 		{
 			// 다음 노드 그룹화
 			ConnectWithNextNodeGrouping(PreviousDepthNodes, NextDepthNodes, P, N, TotalConnections);
@@ -193,7 +203,7 @@ void UMapGenerator::ConnectNodes()
 		else
 		{
 			// 전 노드 그룹화
-			ConnectWithPreviousNodeGrouping(PreviousDepthNodes, NextDepthNodes, P, N, TotalConnections);
+			ConnectWithReversedNodeGrouping(PreviousDepthNodes, NextDepthNodes, P, N, TotalConnections);
 		}
 	}
 
@@ -475,9 +485,10 @@ void UMapGenerator::ConnectWithNextNodeGrouping(const TArray<UMapNode*>& Previou
 	}
 }
 
-void UMapGenerator::ConnectWithPreviousNodeGrouping(const TArray<UMapNode*>& PreviousNodes, const TArray<UMapNode*>& NextNodes, int32 P, int32 N, int32& TotalConnections)
+void UMapGenerator::ConnectWithReversedNodeGrouping(const TArray<UMapNode*>& PreviousNodes, const TArray<UMapNode*>& NextNodes, int32 P, int32 N, int32& TotalConnections)
 {
-	// 1단계: 그룹 크기 결정 (전 노드를 N개 그룹으로 분할)
+	// P > N 경우: NextNodes를 그룹으로 나누고 PreviousNodes를 할당
+	// 1단계: 그룹 크기 결정 (N개 그룹, 각 그룹이 P개 노드 중 일부를 담당)
 	TArray<int32> GroupSizes;
 	GroupSizes.SetNum(N);
 
@@ -487,39 +498,77 @@ void UMapGenerator::ConnectWithPreviousNodeGrouping(const TArray<UMapNode*>& Pre
 	{
 		if (i == N - 1)
 		{
-			// 마지막 그룹은 남은 전부
-			GroupSizes[i] = RemainingNodes;
+			// 마지막 그룹은 남은 전부, 단 음수면 1로 조정 (최대 제한 없음)
+			int32 FinalGroupSize = RemainingNodes <= 0 ? 1 : RemainingNodes;
+			GroupSizes[i] = FinalGroupSize;
 		}
 		else
 		{
-			int32 RemainingGroups = N - i - 1;
+			// 1개 이상 자유롭게 선택
 			int32 MinSize = 1;
-			int32 MaxSize = RemainingNodes - RemainingGroups; // 다른 그룹들이 최소 1개씩
+			int32 MaxSize = FMath::Max(1, RemainingNodes - (N - i - 1)); // 다른 그룹들이 최소 1개씩
 
 			GroupSizes[i] = RandomStream.RandRange(MinSize, MaxSize);
 			RemainingNodes -= GroupSizes[i];
 		}
 	}
 
-	// 2단계: 연결 생성 (순차 할당)
-	int32 NodeIndex = 0;
+	// 2단계: 오버랩 계산
+	int32 TotalGroupSize = 0;
+	for (int32 Size : GroupSizes)
+	{
+		TotalGroupSize += Size;
+	}
+
+	int32 RequiredOverlap = FMath::Max(0, TotalGroupSize - P);
+
+	UE_LOG(LogTemp, Log, TEXT("Reversed Group sizes: Total=%d, P=%d, Required overlap=%d"), TotalGroupSize, P, RequiredOverlap);
+
+	// 3단계: 오버랩 분산 배치
+	TArray<int32> OverlapDistribution;
+	OverlapDistribution.SetNum(N - 1);
+
+	// 오버랩을 경계들에 균등 분산
+	for (int32 i = 0; i < RequiredOverlap; i++)
+	{
+		int32 BoundaryIndex = i % (N - 1);
+		OverlapDistribution[BoundaryIndex]++;
+	}
+
+	// 4단계: 그룹 위치 계산 및 연결 생성 (역방향)
+	int32 CurrentPosition = 0;
 
 	for (int32 i = 0; i < N; i++)
 	{
-		for (int32 j = 0; j < GroupSizes[i]; j++)
+		int32 GroupStart = CurrentPosition;
+		int32 GroupEnd = CurrentPosition + GroupSizes[i] - 1;
+
+		// P 범위를 벗어나지 않도록 조정
+		GroupEnd = FMath::Min(GroupEnd, P - 1);
+
+		// 연결 생성 (PreviousNodes -> NextNodes 방향)
+		for (int32 j = GroupStart; j <= GroupEnd; j++)
 		{
-			if (NodeIndex < P)
+			if (j >= 0 && j < P)
 			{
-				PreviousNodes[NodeIndex]->AddConnection(NextNodes[i]);
+				PreviousNodes[j]->AddConnection(NextNodes[i]);
 				TotalConnections++;
-				NodeIndex++;
 			}
 		}
 
-		UE_LOG(LogTemp, Log, TEXT("Next node (%d,%d) connected from %d previous nodes"),
-			NextNodes[i]->Position.Depth, NextNodes[i]->Position.Row, GroupSizes[i]);
+		UE_LOG(LogTemp, Log, TEXT("Next node (%d,%d) connected from previous nodes [%d-%d], group size=%d"),
+			NextNodes[i]->Position.Depth, NextNodes[i]->Position.Row,
+			GroupStart, FMath::Min(GroupEnd, P - 1), GroupSizes[i]);
+
+		// 다음 그룹 시작 위치 계산 (오버랩 고려)
+		if (i < N - 1)
+		{
+			CurrentPosition += GroupSizes[i] - OverlapDistribution[i];
+		}
 	}
 }
+
+
 
 void UMapGenerator::UpdateNodeAccessibility()
 {

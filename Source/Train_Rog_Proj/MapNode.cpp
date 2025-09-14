@@ -106,14 +106,5 @@ bool UMapNode::IsValidConnection(UMapNode* TargetNode) const
 	{
 		return true;
 	}
-
-	// 교차 방지: 행 차이가 1 이하여야 함 (±1칸 범위 내에서만 연결 허용)
-	/*
-	int32 RowDifference = FMath::Abs(TargetNode->Position.Row - Position.Row);
-	if (RowDifference > 1)
-	{
-		return false; // 너무 멀리 떨어진 행으로는 연결 불가 (교차 발생 방지)
-	}
-	*/
 	return true; // 기본적으로 연결 가능
 }
