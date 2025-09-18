@@ -13,6 +13,5 @@ UCLASS()
 class TRAIN_ROG_PROJ_API AToad : public AEnemy
 {
 	GENERATED_BODY()
-
-	void BeginPlay() override;
+	
 };
