@@ -28,8 +28,6 @@ AEnemy::AEnemy()
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = true;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-
-	HealthComponent->OnDeath.AddDynamic(this, &AEnemy::Death_Implementation);
 }
 
 // Called when the game starts or when spawned
@@ -44,7 +42,6 @@ void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	//DebugDisplay(DeltaTime);
 }
 
 // Called to bind functionality to input
@@ -60,8 +57,7 @@ void AEnemy::Attack_Implementation()
 	UE_LOG(LogTemp, Warning, TEXT("ENEMY : Attack Activated."));
 }
 
-//Deprecated
-/*void AEnemy::ApplyDamage(AActor* TargetActor, float Damage)
+void AEnemy::ApplyDamage(AActor* TargetActor, float Damage)
 {
 	//공격 대상 액터가 체력, 능력 컴포넌트가 있는 지 확인
 	UHealthComponent* HealthComp = TargetActor->FindComponentByClass<UHealthComponent>();
@@ -75,11 +71,7 @@ void AEnemy::Attack_Implementation()
 		UE_LOG(LogTemp, Warning, TEXT("ENEMY : Target has Ability"));
 		//지수 곡선으로 형태로 방어력 적용
 		//'방어력이 높아질수록 대미지가 점점 줄지만 얼마나 줄어들 지 조정 가능' 라고 GPT가 말함.
-		//FinalDamage = Damage * FMath::Pow(0.9f, AbilityComp->Defense / 10.0f);
-		//기획에서 넘어온 대미지 계산식 적용 -> 최종 받는 피해 = 공격력*{1-[방어력/(방어력+상수)]}
-		FinalDamage = Damage * ( 1 - (AbilityComp->Defense/(AbilityComp->Defense + 2)));
-		//적용 대미지 확인 로그
-		UE_LOG(LogTemp, Warning, TEXT("DAMAGE : %f"), FinalDamage);
+		FinalDamage = Damage * FMath::Pow(0.9f, AbilityComp->Defense / 10.0f);
 	}
 
 	//체력 컴포넌트가 있으면 대미지 적용
@@ -88,7 +80,7 @@ void AEnemy::Attack_Implementation()
 		UE_LOG(LogTemp, Warning, TEXT("ENEMY : Target has Health"));
 		HealthComp->DecreaseHP(FinalDamage);
 	}
-}*/
+}
 
 //사망 함수 - C++ 구현부
 void AEnemy::Death_Implementation()
@@ -113,54 +105,4 @@ bool AEnemy::FindTarget()
 
 	//실패 반환
 	return false;
-}
-
-//Standard : 기준값, Offset : % >> ex)공격력 20, 랜덤 +-5% -> Standard = 20, Offset = 0.05
-float AEnemy::GetRandomStat(float Standard, float Offset)
-{
-	float Result = Standard;
-	//랜덤 +- 결정
-	int32 Sign = FMath::RandBool() ? 1 : -1;
-	Result = Standard + (Sign * Offset);
-	
-	return Result;
-}
-
-void AEnemy::DebugDisplay(float Duration)
-{
-	FString Msg = FString::Format(TEXT("{0} : {1}"), { GetName(), HealthComponent->CurrentHP });
-	
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(
-			-1,                      
-			Duration,                  
-			DebugColor,           
-			Msg    
-		);
-	}
-}
-
-float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator,
-	AActor* DamageCauser)
-{
-	float FinalDamage = DamageAmount;
-
-	//능력 컴포넌트가 있으면 대미지를 능력과 계산
-	if (AbilityComponent)
-	{
-		//지수 곡선으로 형태로 방어력 적용
-		//'방어력이 높아질수록 대미지가 점점 줄지만 얼마나 줄어들 지 조정 가능' 라고 GPT가 말함.
-		//FinalDamage = Damage * FMath::Pow(0.9f, AbilityComp->Defense / 10.0f);
-		//기획에서 넘어온 대미지 계산식 적용 -> 최종 받는 피해 = 공격력*{1-[방어력/(방어력+상수)]}
-		FinalDamage = DamageAmount * ( 1 - (AbilityComponent->Defense/(AbilityComponent->Defense + 2)));
-	}
-
-	//체력 컴포넌트가 있으면 대미지 적용
-	if (HealthComponent)
-	{
-		HealthComponent->DecreaseHP(FinalDamage);
-	}
-	
-	return FinalDamage;
 }
