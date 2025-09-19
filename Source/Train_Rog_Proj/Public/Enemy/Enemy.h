@@ -6,18 +6,6 @@
 #include "GameFramework/Character.h"
 #include "Enemy.generated.h"
 
-//스테이지 구분 임시 ENUM
-
-UENUM(BlueprintType)
-enum class STAGE : uint8
-{
-	STAGE_1 UMETA(DisplayName = "STAGE 1"),
-	STAGE_2 UMETA(DisplayName = "STAGE 2"),
-	STAGE_3 UMETA(DisplayName = "STAGE 3"),
-	STAGE_4 UMETA(DisplayName = "STAGE 4"),
-	STAGE_5 UMETA(DisplayName = "STAGE 5")
-};
-
 /**
  * 적 몬스터 부모 클래스
  */
@@ -50,10 +38,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	class UWidgetComponent* HPBar;
 
-	//능력치 설정 스테이지 변수
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	STAGE CurrentStage = STAGE::STAGE_1;
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -70,10 +54,9 @@ public:
 	void Attack();
 	virtual void Attack_Implementation();
 
-	//Deprecated
 	//입력되는 TargetActor에 대미지를 적용하는 함수 (Health 컴포넌트가 있을 시 체력 감소)
-	//UFUNCTION(BlueprintCallable, Category = Attack)
-	//void ApplyDamage(AActor* TargetActor, float Damage);
+	UFUNCTION(BlueprintCallable, Category = Attack)
+	void ApplyDamage(AActor* TargetActor, float Damage);
 
 	//사망 함수 - C++과 블루프린트 모두에서 구현 가능
 	UFUNCTION(BlueprintNativeEvent)
@@ -84,16 +67,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool FindTarget();
 
-	UFUNCTION(BlueprintCallable)
-	float GetRandomStat(float standard, float offset);
-
-	UFUNCTION(BlueprintCallable)
-	void DebugDisplay(float Duration);
-
-	FColor DebugColor = FColor::MakeRandomColor();
-
-	//대미지 수신 함수
-	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 };
 
 

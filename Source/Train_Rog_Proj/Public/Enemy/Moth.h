@@ -14,6 +14,8 @@ class TRAIN_ROG_PROJ_API AMoth : public AEnemy
 {
 	GENERATED_BODY()
 
-	void BeginPlay() override;
+public:
+
+	
 	
 };
