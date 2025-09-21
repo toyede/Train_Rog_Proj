@@ -66,7 +66,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	//공격 함수 - C++과 블루프린트 모두에서 구현 가능
-	UFUNCTION(BlueprintNativeEvent, Category = Attack)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = Attack)
 	void Attack();
 	virtual void Attack_Implementation();
 
