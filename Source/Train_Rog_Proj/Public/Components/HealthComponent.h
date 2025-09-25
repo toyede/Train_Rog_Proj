@@ -28,7 +28,7 @@ public:
 
 	//현재 체력
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
-	float CurrentHP = 100.0f;
+	float CurrentHP = MaxHP;
 
 	//사망 알림 델리게이트
 	UPROPERTY(BlueprintAssignable, Category = "Health")
@@ -51,4 +51,15 @@ public:
 	//체력 감소 함수 amount 만큼 체력을 감소.
 	UFUNCTION(BlueprintCallable, Category = Health)
 	void DecreaseHP(float amount);
+
+	//체력 증가 함수 (스텟을 통한)
+	UFUNCTION(BlueprintCallable, Category = Health)
+	void IncreaseMaxHP(int stack);
+	
+	//체력 감소 함수 (스텟을 통한)
+	UFUNCTION(BlueprintCallable, Category = Health)
+	void DecreaseMaxHP(int stack);
+
+	UFUNCTION(BlueprintCallable)
+	float GetRandomStat(float Standard, float Offset);
 };

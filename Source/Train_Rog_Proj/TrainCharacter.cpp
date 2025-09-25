@@ -1,335 +1,276 @@
-<<<<<<< HEAD
-=======
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #include "TrainCharacter.h"
->>>>>>> Develop
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Camera/CameraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "DrawDebugHelpers.h"
+#include <cstdlib>
+#include <ctime>
+#include "Components/AbilityComponent.h"
+#include "Components/HealthComponent.h"
+//#include "InteractInterface.h"
 
-// Sets default values
-// Sets default values
+// ìºë¦­í„° í´ë˜ìŠ¤ì˜ ê¸°ë³¸ê°’ ì„¸íŒ…
 ATrainCharacter::ATrainCharacter()
 {
-    // ÀÌ Ä³¸¯ÅÍ°¡ ¸Å ÇÁ·¹ÀÓ¸¶´Ù Tick()À» È£ÃâÇÏµµ·Ï ¼³Á¤ÇÕ´Ï´Ù. ÇÊ¿ä ¾ø´Ù¸é ¼º´ÉÀ» À§ÇØ ²¨µµ µË´Ï´Ù.
+    HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+    AbilityComponent = CreateDefaultSubobject<UAbilityComponent>(TEXT("AbilityComponent"));
+    
+    // ë§¤ í”„ë ˆì„ Tick() í˜¸ì¶œ ì—¬ë¶€s
     PrimaryActorTick.bCanEverTick = true;
 
-    // Spring Arm(Ä«¸Ş¶ó ºÕ) ÄÄÆ÷³ÍÆ® »ı¼º ¹× ·çÆ®¿¡ ºÎÂø
+    // â–º ì¹´ë©”ë¼ ë¶(SpringArm) ìƒì„± ë° ìºë¦­í„°ì— ë¶€ì°©
     CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
     CameraBoom->SetupAttachment(RootComponent);
 
-    // Ä«¸Ş¶ó °Å¸®(ÆÈ ±æÀÌ) ¼³Á¤
-    CameraBoom->TargetArmLength = 300.0f; // Ä«¸Ş¶ó¿Í Ä³¸¯ÅÍ »çÀÌ °Å¸® ¼³Á¤
-    CameraBaseLength = CameraBoom->TargetArmLength; // ±âº» ±æÀÌ ÀúÀå
+    // ì¹´ë©”ë¼ ê¸°ë³¸ ê±°ë¦¬
+    CameraBoom->TargetArmLength = 300.0f;
+    CameraBaseLength = CameraBoom->TargetArmLength;
 
-    // ÄÁÆ®·Ñ·¯ È¸Àü »ç¿ë ¼³Á¤
-    //CameraBoom->bUsePawnControlRotation = true; // ÄÁÆ®·Ñ·¯ È¸Àü¿¡ µû¶ó ºÕ È¸Àü (¿©±â¼± ²¨µÒ)
-    CameraBoom->bUsePawnControlRotation = false; // ºÕ ÀÚÃ¼°¡ ÄÁÆ®·Ñ·¯ È¸Àü ¾È µû¸§
+    // ì¹´ë©”ë¼ íšŒì „ ì œì–´ (í”Œë ˆì´ì–´ ì…ë ¥ì— ë”°ë¼ ì›€ì§ì¼ì§€)
+    CameraBoom->bUsePawnControlRotation = false;
     CameraBoom->bInheritPitch = true;
     CameraBoom->bInheritYaw = true;
     CameraBoom->bInheritRoll = true;
 
-    // Ä«¸Ş¶ó ÄÄÆ÷³ÍÆ® »ı¼º, Spring Arm¿¡ ºÎÂø
+    // ì¹´ë©”ë¼ ì»´í¬ë„ŒíŠ¸ ìƒì„± ë° ì—°ê²°
     FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
     FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-
-    // Ä«¸Ş¶ó°¡ ÄÁÆ®·Ñ·¯ È¸ÀüÀ» µû¸£Áö ¾Ê°Ô ¼³Á¤
     FollowCamera->bUsePawnControlRotation = false;
 
-    // ±âº» °È±â ¼Óµµ µî ÃÊ±â°ª ÀúÀå
+    // ê¸°ë³¸ ì´ë™ì†ë„ ì €ì¥
     NormalWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
 
-    // Ä«¸Ş¶ó ¿ÀÇÁ¼Â ÀúÀå ¹× ¿õÅ©¸± ¶§ ¿ÀÇÁ¼Â ¼³Á¤
+    // ê¸°ë³¸ ì¹´ë©”ë¼ ì˜¤í”„ì…‹
     DefaultCameraOffset = CameraBoom->TargetOffset;
     CrouchCameraOffset = DefaultCameraOffset + FVector(0.f, 0.f, -30.f);
 
-    // ÄÁÆ®·Ñ·¯ È¸Àü »ç¿ë ¼³Á¤ (Pitch, Yaw »ç¿ë, RollÀº »ç¿ëÇÏÁö ¾ÊÀ½)
+    // ìºë¦­í„° íšŒì „ ì„¤ì •
     bUseControllerRotationPitch = true;
     bUseControllerRotationYaw = true;
-    bUseControllerRotationRoll = false;  // ·ÑÀº ²¨µÒ
+    bUseControllerRotationRoll = false;
 
-    // ¿òÁ÷ÀÓ ¹æÇâ¿¡ µû¶ó Ä³¸¯ÅÍ È¸Àü ¾È ÇÏµµ·Ï ¼³Á¤
     GetCharacterMovement()->bOrientRotationToMovement = false;
-
-    // Ä³¸¯ÅÍ È¸Àü ¼Óµµ ¼³Á¤
-    GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);  // Yaw¸¸ ºü¸£°Ô È¸Àü
+    GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
 }
 
-// Called when the game starts or when spawned
+// ê²Œì„ ì‹œì‘ ì‹œ ì´ˆê¸°í™”
 void ATrainCharacter::BeginPlay()
 {
     Super::BeginPlay();
 
-    // ÇÃ·¹ÀÌ¾î ÄÁÆ®·Ñ·¯°¡ ÀÖÀ¸¸é ÀÔ·Â ½Ã½ºÅÛ ¼³Á¤
+    // Enhanced Input ë§µí•‘ ë“±ë¡
     if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
     {
-        // Enhanced Input Subsystem °¡Á®¿È (ÀÔ·Â ¸ÅÇÎ¿ë)
         if (ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
         {
             UEnhancedInputLocalPlayerSubsystem* Subsystem =
                 ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer);
-            // ÀÔ·Â ¸ÅÇÎ ÄÁÅØ½ºÆ®¸¦ ¼­ºê½Ã½ºÅÛ¿¡ µî·Ï
+            
             if (Subsystem && DefaultMappingContext)
             {
-                Subsystem->AddMappingContext(DefaultMappingContext, 0); // ¿ì¼±¼øÀ§ 0À¸·Î µî·Ï
+                Subsystem->AddMappingContext(DefaultMappingContext, 0);
             }
         }
     }
+
+    // ì»¨íŠ¸ë¡¤ëŸ¬ íšŒì „ ì´ˆê¸°í™”
     if (Controller)
     {
-        // ÄÁÆ®·Ñ·¯ ÃÊ±â È¸Àü ¼³Á¤ (Pitch, Yaw, Roll ¸ğµÎ 0)
         Controller->SetControlRotation(FRotator(0.f, 0.f, 0.f));
     }
+
+    // ë‚œìˆ˜ ì´ˆê¸°í™”
+    srand(static_cast<unsigned int>(time(NULL)));
 }
 
-// Called every frame
+// ë§¤ í”„ë ˆì„ í˜¸ì¶œ
 void ATrainCharacter::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
 }
 
-// Called to bind functionality to input
+// ì…ë ¥ ë°”ì¸ë”©
 void ATrainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
     Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-    // EnhancedInputComponent·Î Ä³½ºÆÃ ÈÄ, °¢ ¾×¼ÇÀ» ¹ÙÀÎµù
     UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+
+    // â–¶ ì´ë™
     if (EnhancedInputComponent && MoveAction)
-    {
-        EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Move); // ÀÌµ¿
-    }
+        EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Move);
+
+    // â–¶ ì í”„
     if (JumpAction)
     {
-        EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ATrainCharacter::StartJump); // Á¡ÇÁ ½ÃÀÛ
-        EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ATrainCharacter::StopJump); // Á¡ÇÁ Á¾·á
+        EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ATrainCharacter::StartJump);
+        EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ATrainCharacter::StopJump);
     }
+
+    // â–¶ ì•‰ê¸°
     if (CrouchAction)
     {
-        EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ATrainCharacter::StartCrouch); // ¿õÅ©¸®±â ½ÃÀÛ
-        EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ATrainCharacter::StopCrouch); // ¿õÅ©¸®±â ³¡
+        EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ATrainCharacter::StartCrouch);
+        EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ATrainCharacter::StopCrouch);
     }
+
+    // â–¶ ì¤Œ
     if (Zoom)
     {
-        EnhancedInputComponent->BindAction(Zoom, ETriggerEvent::Started, this, &ATrainCharacter::StartZoom); // ÁÜÀÎ
-        EnhancedInputComponent->BindAction(Zoom, ETriggerEvent::Completed, this, &ATrainCharacter::StopZoom); // ÁÜ¾Æ¿ô
+        EnhancedInputComponent->BindAction(Zoom, ETriggerEvent::Started, this, &ATrainCharacter::StartZoom);
+        EnhancedInputComponent->BindAction(Zoom, ETriggerEvent::Completed, this, &ATrainCharacter::StopZoom);
     }
+
+    // â–¶ ì‹œì  ì´ë™(ë§ˆìš°ìŠ¤)
     if (LookAction)
-    {
-<<<<<<< HEAD
-        EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Look); // ¸¶¿ì½º ÀÌµ¿/È¸Àü
-    }
-=======
         EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Look);
-	}
 
-    // ê¹€ì¬í›ˆ ì¶”ê°€
+    // â–¶ ìƒí˜¸ì‘ìš© (ê°œë°œì ì¶”ê°€)
     if (InteractAction)
-    {
         EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ATrainCharacter::Interact);
-	}
 
->>>>>>> Develop
+    // â–¶ ë‹¬ë¦¬ê¸°
     if (RunAction)
     {
-        EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Started, this, &ATrainCharacter::StartRun); // ´Ş¸®±â ½ÃÀÛ
-        EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &ATrainCharacter::StopRun); // ´Ş¸®±â ³¡
+        EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Started, this, &ATrainCharacter::StartRun);
+        EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &ATrainCharacter::StopRun);
     }
 }
 
-// ÀÌµ¿ Ã³¸® ÇÔ¼ö
+// =================== ìºë¦­í„° ë™ì‘ =================== //
+
+// ì´ë™ ì²˜ë¦¬
 void ATrainCharacter::Move(const FInputActionValue& Value)
 {
     FVector2D MovementVector = Value.Get<FVector2D>();
-    // ÀÔ·Â °ªÀÌ °ÅÀÇ ¾ø°Å³ª ÄÁÆ®·Ñ·¯°¡ ¾øÀ¸¸é ¸®ÅÏ
     if (Controller == nullptr || MovementVector.IsNearlyZero())
         return;
 
-    // Ä«¸Ş¶ó(ÄÁÆ®·Ñ·¯) È¸Àü Á¤º¸ ¾ò±â
+    // ì¹´ë©”ë¼ ê¸°ì¤€ ë°©í–¥ ë²¡í„° êµ¬í•¨
     FRotator CameraRotation = Controller->GetControlRotation();
-    // Yaw(ÁÂ¿ì)¸¸ »ç¿ë
     FRotator YawRotation(0.f, CameraRotation.Yaw, 0.f);
 
-    // Forward, Right ¹æÇâ º¤ÅÍ °è»ê
     FVector ForwardDir = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-    FVector RightDir = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+    FVector RightDir   = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
-    // ÀÔ·Â¿¡ µû¶ó ÃÖÁ¾ ÀÌµ¿ ¹æÇâ °è»ê ¹× Á¤±ÔÈ­
     FVector MoveDirection = ForwardDir * MovementVector.Y + RightDir * MovementVector.X;
     MoveDirection.Normalize();
 
-    // Ä³¸¯ÅÍ ÀÌµ¿
     AddMovementInput(MoveDirection, 1.0f);
 
-    // ÀÌµ¿ ¹æÇâ¿¡ µû¶ó ºÎµå·´°Ô Ä³¸¯ÅÍ È¸Àü
+    // ì´ë™í•˜ëŠ” ë°©í–¥ì„ ë°”ë¼ë³´ë„ë¡ íšŒì „ ë³´ê°„
     FRotator TargetRotation = MoveDirection.Rotation();
-    FRotator CurrentRotation = GetActorRotation();
-    SetActorRotation(FMath::RInterpTo(CurrentRotation, TargetRotation, GetWorld()->GetDeltaSeconds(), 10.f));
+    SetActorRotation(FMath::RInterpTo(GetActorRotation(), TargetRotation, GetWorld()->GetDeltaSeconds(), 10.f));
 }
 
-// Á¡ÇÁ ½ÃÀÛ
-void ATrainCharacter::StartJump()
-{
-    Jump();
-}
+// ì í”„ ì‹œì‘
+void ATrainCharacter::StartJump() { Jump(); }
 
-// Á¡ÇÁ ³¡
-void ATrainCharacter::StopJump()
-{
-    StopJumping();
-}
+// ì í”„ ì¢…ë£Œ
+void ATrainCharacter::StopJump() { StopJumping(); }
 
-// ¿õÅ©¸®±â ½ÃÀÛ
+// ì•‰ê¸° ì‹œì‘
 void ATrainCharacter::StartCrouch()
 {
-    Crouch(); // ¿õÅ©¸®±â
-
-    // ¿õÅ©¸± ¶§ ¼Óµµ °¨¼Ò
+    Crouch();
     GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed * 0.5f;
-
-    // Ä«¸Ş¶ó ¿ÀÇÁ¼Â º¯°æ
-    if (CameraBoom)
-    {
-        CameraBoom->TargetOffset = CrouchCameraOffset;
-    }
+    CameraBoom->TargetOffset = CrouchCameraOffset;
 }
 
-// ¿õÅ©¸®±â ³¡
+// ì•‰ê¸° í•´ì œ
 void ATrainCharacter::StopCrouch()
 {
-    UnCrouch(); // ¿õÅ©¸®±â Á¾·á
-
-    // ¼Óµµ ¿ø·¡´ë·Î º¹¿ø
+    UnCrouch();
     GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
-
-    // Ä«¸Ş¶ó ¿ÀÇÁ¼Â º¹¿ø
-    if (CameraBoom)
-    {
-        CameraBoom->TargetOffset = DefaultCameraOffset;
-    }
+    CameraBoom->TargetOffset = DefaultCameraOffset;
 }
 
-// ÁÜ ÀÎ(Ä«¸Ş¶ó °Å¸® ´õ °¡±î¿ò)
+// ì¤Œ ì¸/ì•„ì›ƒ
 void ATrainCharacter::ZoomIn()
 {
-    CameraBaseLength = CameraBoom->TargetArmLength; // ÇöÀç °Å¸® ÀúÀå
-    CameraBoom->TargetArmLength = -100.0f; // ´õ °¡±î¿î °Å¸®·Î º¯°æ
+    CameraBaseLength = CameraBoom->TargetArmLength;
+    CameraBoom->TargetArmLength = -100.f;
     bIsZooming = true;
 }
 
-// ÁÜ ¾Æ¿ô(Ä«¸Ş¶ó °Å¸® º¹¿ø)
 void ATrainCharacter::ZoomOut()
 {
     CameraBoom->TargetArmLength = CameraBaseLength;
     bIsZooming = false;
 }
 
-// ÁÜ ½ÃÀÛ
-void ATrainCharacter::StartZoom()
-{
-    ZoomIn();
-}
+void ATrainCharacter::StartZoom() { ZoomIn(); }
+void ATrainCharacter::StopZoom()  { ZoomOut(); }
 
-// ÁÜ ³¡
-void ATrainCharacter::StopZoom()
-{
-    ZoomOut();
-}
-
-// ¸¶¿ì½º µî Ä«¸Ş¶ó È¸Àü Ã³¸®
+// ë§ˆìš°ìŠ¤ Look ì…ë ¥ ì²˜ë¦¬
 void ATrainCharacter::Look(const FInputActionValue& Value)
 {
     FVector2D LookAxis = Value.Get<FVector2D>();
-    float YawSensitivity = 1.0f;
-    float PitchSensitivity = 1.0f;
 
-    // ÁÂ¿ì(Yaw) ¹æÇâ È¸Àü Ã³¸®
-    AddControllerYawInput(LookAxis.X * YawSensitivity);
+    AddControllerYawInput(LookAxis.X);  // ì¢Œìš° íšŒì „
 
-    // À§¾Æ·¡(Pitch) ¹æÇâ È¸Àü Ã³¸®
+    // ìƒí•˜ íšŒì „ ì œí•œ (-45ë„ ~ 45ë„)
     FRotator ControlRot = Controller->GetControlRotation();
-    float NewPitch = ControlRot.Pitch + LookAxis.Y * PitchSensitivity * -1.0f;
-
-    // Pitch °¢µµ Á¦ÇÑ (-45~45µµ)
-    NewPitch = FMath::ClampAngle(NewPitch, -45.0f, 45.0f);
-
-    // º¯°æµÈ Pitch ¹İ¿µ
+    float NewPitch = FMath::ClampAngle(ControlRot.Pitch + LookAxis.Y * -1.0f, -45.0f, 45.0f);
     ControlRot.Pitch = NewPitch;
     Controller->SetControlRotation(ControlRot);
 }
 
-// ê¹€ì¬í›ˆ ì¶”ê°€
+// ìƒí˜¸ì‘ìš©: ì¹´ë©”ë¼ ì „ë°© ë¼ì¸íŠ¸ë ˆì´ìŠ¤ ê²€ì‚¬
 void ATrainCharacter::Interact(const FInputActionValue& Value)
 {
-    if (Controller == nullptr || FollowCamera == nullptr)
-	{
-		return;
-	}
+    if (!Controller || !FollowCamera) return;
 
-	// ë¼ì¸ íŠ¸ë ˆì´ìŠ¤ ì‹œì‘ì ê³¼ ëì  ê³„ì‚°
-	FVector StartLocation = FollowCamera->GetComponentLocation();
-	FVector ForwardVector = FollowCamera->GetForwardVector();
-	FVector EndLocation = StartLocation + (ForwardVector * TraceDistance);
+    FVector StartLocation = FollowCamera->GetComponentLocation();
+    FVector ForwardVector = FollowCamera->GetForwardVector();
+    FVector EndLocation = StartLocation + (ForwardVector * TraceDistance);
 
-	// ì¶©ëŒ ì²´í¬ìš© ë³€ìˆ˜ ì„¸íŒ…
-	FHitResult HitResult;
-	FCollisionQueryParams CollisionParams;
-	CollisionParams.AddIgnoredActor(this); // ìê¸° ìì‹ ì€ íŠ¸ë ˆì´ìŠ¤ì—ì„œ ì œì™¸
+    FHitResult HitResult;
+    FCollisionQueryParams CollisionParams;
+    CollisionParams.AddIgnoredActor(this);
 
-	// ë¼ì¸ íŠ¸ë ˆì´ìŠ¤ ì‹¤í–‰
-	bool bHit = GetWorld()->LineTraceSingleByChannel(
-		HitResult,
-		StartLocation,
-		EndLocation,
-		ECC_Visibility, // Visibility ì±„ë„ì— ìˆëŠ” ì˜¤ë¸Œì íŠ¸ë§Œ ê°ì§€
-		CollisionParams
-	);
+    bool bHit = GetWorld()->LineTraceSingleByChannel(
+        HitResult, StartLocation, EndLocation,
+        ECC_Visibility, CollisionParams
+    );
 
-	DrawDebugLine(GetWorld(), StartLocation, EndLocation, bHit ? FColor::Green : FColor::Red, false, 1.0f, 0, 1.0f);
+    // ë””ë²„ê·¸ ë¼ì¸ í‘œì‹œ
+    DrawDebugLine(GetWorld(), StartLocation, EndLocation, bHit ? FColor::Green : FColor::Red, false, 1.0f, 0, 1.0f);
 
-	// ë¬´ì–¸ê°€ì— ë¶€ë”ªí˜”ëŠ”ì§€ í™•ì¸
-	if (bHit)
-	{
-		// ë¶€ë”ªíŒ ì•¡í„° ê°€ì ¸ì˜¤ê¸°
-		AActor* HitActor = HitResult.GetActor();
-
-		// ë¶€ë”ªíŒ ì•¡í„°ê°€ InteractInterfaceë¥¼ êµ¬í˜„í–ˆëŠ”ì§€ í™•ì¸
-		if (HitActor && HitActor->GetClass()->ImplementsInterface(UInteractInterface::StaticClass()))
-		{
-            // ì²«ë²ˆì§¸ ì¸ì(HitActor)ëŠ” Interactí•¨ìˆ˜ë¥¼ ì‹¤í–‰í•  ê°ì²´, thisëŠ” Interactí•¨ìˆ˜ì—ì„œ ì¸ìë¡œ ë°›ì„ ê°ì²´.
-			IInteractInterface::Execute_Interact(HitActor, this);
-            // UE_LOG(LogTemp, Warning, TEXT("Debug"));
-		}
-	}
+    if (bHit)
+    {
+        AActor* HitActor = HitResult.GetActor();
+        if (HitActor && HitActor->GetClass()->ImplementsInterface(UInteractInterface::StaticClass()))
+        {
+            IInteractInterface::Execute_Interact(HitActor, this);
+        }
+    }
 }
 
+// ë‹¬ë¦¬ê¸°
 void ATrainCharacter::StartRun()
 {
-    // ï¿½Ş¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     bIsRunning = true;
     GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed * RunSpeedMultiplier;
 }
 
 void ATrainCharacter::StopRun()
 {
-    // ï¿½Ş¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     bIsRunning = false;
     GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
 }
 
+// === í‚¤ ë¦¬ë§¤í•‘ ê¸°ëŠ¥ === //
 void ATrainCharacter::RemapKey(UInputAction* InputAction, FKey OldKey, FKey NewKey)
 {
     if (!DefaultMappingContext || !InputAction) return;
 
-    // 1. ï¿½ï¿½ï¿½ï¿½ Å° ï¿½ï¿½ï¿½
     DefaultMappingContext->UnmapKey(InputAction, OldKey);
-
-    // 2. ï¿½ï¿½ Å° ï¿½ï¿½ï¿½ï¿½
     DefaultMappingContext->MapKey(InputAction, NewKey);
 
-    // 3. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     if (APlayerController* PC = Cast<APlayerController>(Controller))
     {
         if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
@@ -338,43 +279,33 @@ void ATrainCharacter::RemapKey(UInputAction* InputAction, FKey OldKey, FKey NewK
             Subsystem->AddMappingContext(DefaultMappingContext, 0);
         }
     }
-<<<<<<< HEAD
 }
 
-int ATrainCharacter::IncreaseHP()
+void ATrainCharacter::LevelUp()
 {
-	HP += HPStack * 2;
-    return HP;
+    EXP = 0;
+    MaxEXP += 50;
+    Level++;
 }
 
-int ATrainCharacter::IncreasePower()
+float ATrainCharacter::CalDamage(float weaponDamage, float weaponConst, float criChance, float cirDam, bool cri)
 {
-    Power += PowerStack * 2;
-    return Power;
+    float totalDamage = weaponDamage + AbilityComponent->Damage * weaponConst;
+
+    int Critical = rand() % 100;
+    if (cri == true && Critical <= AbilityComponent-> CriticalChance + criChance)
+    {
+        totalDamage += totalDamage * (AbilityComponent->CriticalDamage + cirDam);
+        totalDamage = FMath::RoundToFloat(totalDamage * 10.0f) / 10.0f;
+        GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::White, TEXT("í¬ë¦¬í‹°ì»¬ ë°ë¯¸ì§€"));
+    }
+    return totalDamage;
 }
 
-int ATrainCharacter::IncreaseDefense()
+float ATrainCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
-    Defense += DefenseStack * 2;
-    return Defense;
-}
-
-float ATrainCharacter::IncreaseAttackSpeed()
-{
-    AttackSpeed += AttackSpeedStack * 0.02f;
-    return AttackSpeed;
-}
-
-float ATrainCharacter::IncreaseCriticalChance()
-{
-    CriticalChance += CriticalChanceStack * 0.01f;
-    return CriticalChance;
-}
-
-float ATrainCharacter::IncreaseCriticalDamage()
-{
-    CriticalDamage += CriticalDamageStack * 0.05f;
-    return CriticalDamage;
-=======
->>>>>>> Develop
+    DamageAmount -= AbilityComponent->Defense;
+    HealthComponent->CurrentHP -= DamageAmount;
+    
+    return DamageAmount;
 }
