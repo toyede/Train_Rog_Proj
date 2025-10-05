@@ -22,10 +22,10 @@ struct FMapGenerationSettings
 	int32 MaxShopNodes;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Special Nodes", meta = (ClampMin = "0"))
-	int32 MinSpecialNodes;
+	int32 MinRepairNodes;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Special Nodes", meta = (ClampMin = "0"))
-	int32 MaxSpecialNodes;
+	int32 MaxRepairNodes;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Connections", meta = (ClampMin = "1", ClampMax = "3"))
 	int32 MinConnectionsPerNode;
@@ -45,8 +45,8 @@ struct FMapGenerationSettings
 
 		MinShopNodes = 1;
 		MaxShopNodes = 2;
-		MinSpecialNodes = 1;
-		MaxSpecialNodes = 2;
+		MinRepairNodes = 1;  // Special -> Repair
+		MaxRepairNodes = 2;  // Special -> Repair
 		MinConnectionsPerNode = 1;
 		MaxConnectionsPerNode = 3;
 

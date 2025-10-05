@@ -152,16 +152,17 @@ void UMapGenerator::AssignSpecialNodeTypes()
 	}
 
 	// 특수 이벤트 노드 할당
-	int32 SpecialNodeCount = RandomStream.RandRange(GenerationSettings.MinSpecialNodes, GenerationSettings.MaxSpecialNodes);
-	SpecialNodeCount = FMath::Min(SpecialNodeCount, NormalNodes.Num() - NodeIndex);
+	int32 RepairNodeCount = RandomStream.RandRange(GenerationSettings.MinRepairNodes, GenerationSettings.MaxRepairNodes);
+	RepairNodeCount = FMath::Min(RepairNodeCount, NormalNodes.Num() - NodeIndex);
 
-	for (int32 i = 0; i < SpecialNodeCount && NodeIndex < NormalNodes.Num(); i++)
+
+	for (int32 i = 0; i < RepairNodeCount && NodeIndex < NormalNodes.Num(); i++)
 	{
-		NormalNodes[NodeIndex]->NodeType = ENodeType::Special;
+		NormalNodes[NodeIndex]->NodeType = ENodeType::Repair;
 		NodeIndex++;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Special node assignment complete: Additional Shop %d, Special %d (Depth 5 shops already set)"), AdditionalShopNodeCount, SpecialNodeCount);
+	UE_LOG(LogTemp, Log, TEXT("Special node assignment complete: Additional Shop %d, Repair %d (Depth 5 shops already set)"), AdditionalShopNodeCount, RepairNodeCount);
 }
 
 void UMapGenerator::ConnectNodes()
