@@ -9,7 +9,8 @@
 #include "Components/Image.h"
 #include "Engine/Engine.h"
 #include "Blueprint/UserWidget.h"
-
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/PlayerController.h"
 
 void UMapUIWidget::NativeConstruct()
 {
@@ -34,9 +35,61 @@ void UMapUIWidget::NativeConstruct()
     }
 
     UE_LOG(LogTemp, Log, TEXT("MapUIWidget constructed"));
+
+    // UI Only 모드로 전환 (NativeConstruct 끝에서 호출)
+    SetUIOnlyMode();
+
+    UE_LOG(LogTemp, Log, TEXT("MapUIWidget constructed - UI Only mode activated"));
 }
 
 
+
+void UMapUIWidget::NativeDestruct()
+{
+    // 위젯이 파괴될 때 Game Only 모드로 복원
+    RestoreGameMode();
+
+    Super::NativeDestruct();
+}
+
+void UMapUIWidget::SetUIOnlyMode()
+{
+    APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+    if (!PlayerController)
+    {
+        UE_LOG(LogTemp, Error, TEXT("PlayerController is null in SetUIOnlyMode"));
+        return;
+    }
+
+    // 모든 입력 키 강제 해제 (눌려있던 키 입력 초기화)
+    PlayerController->FlushPressedKeys();
+
+    // UI Only 모드로 설정
+    FInputModeUIOnly InputMode;
+    InputMode.SetWidgetToFocus(TakeWidget());
+    InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+
+    PlayerController->SetInputMode(InputMode);
+
+    // 마우스 커서 표시
+    PlayerController->bShowMouseCursor = true;
+
+    UE_LOG(LogTemp, Log, TEXT("Switched to UI Only mode with mouse cursor - Inputs flushed"));
+}
+
+void UMapUIWidget::RestoreGameMode()
+{
+    APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+    if (PlayerController)
+    {
+        // Game Only 모드로 복원
+        FInputModeGameOnly InputMode;
+        PlayerController->SetInputMode(InputMode);
+        // 마우스 커서 숨기기
+        PlayerController->bShowMouseCursor = false;
+        UE_LOG(LogTemp, Log, TEXT("Restored to Game Only mode and hid mouse cursor"));
+    }
+}
 
 void UMapUIWidget::SetupMapUI(const TArray<UMapNode*>& Nodes)
 {
@@ -177,6 +230,8 @@ void UMapUIWidget::ClearAllRails()
 
     RailImages.Empty();
 }
+
+
 
 /*
 FVector2D UMapUIWidget::CalculateNode2DPosition(UMapNode* Node) const

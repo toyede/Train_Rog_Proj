@@ -129,8 +129,18 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Map UI")
     void ClearAllRails();
 
+    // 입력 모드 제어 함수들
+    UFUNCTION(BlueprintCallable, Category = "Map UI")
+    void SetUIOnlyMode();
+
+    UFUNCTION(BlueprintCallable, Category = "Map UI")
+    void RestoreGameMode();
+
 protected:
     virtual void NativeConstruct() override;
+    //virtual void NativeOnInitialized() override;
+    virtual void NativeDestruct() override;
+
 
     // 내부 함수들
     FVector2D CalculateOptimalNode2DPosition(UMapNode* Node) const;
