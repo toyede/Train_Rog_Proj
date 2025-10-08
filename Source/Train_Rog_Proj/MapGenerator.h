@@ -108,10 +108,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Map Generation")
 	TArray<UMapNode*> GetAllNodes() const;
 
-
-protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Player")
 	UMapNode* CurrentPlayerNode;
+
+	UFUNCTION(BlueprintCallable, Category = "Map Generation")
+	UMapNode* GetCurrentPlayerNode() const { return CurrentPlayerNode; }
+
+protected:
+
 
 	void CreateNodesAtDepth(int32 Depth, int32 NodeCount);
 	void AssignSpecialNodeTypes();

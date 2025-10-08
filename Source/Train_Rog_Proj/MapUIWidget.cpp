@@ -28,6 +28,17 @@ void UMapUIWidget::NativeConstruct()
     RailSegmentLength = 40.0f;
     RailSegmentWidth = 16.0f;
 
+    // 카메라 설정 초기화 (블루프린트에서 설정하지 않은 경우만)
+    if (CameraZoomLevel <= 0.0f)
+        CameraZoomLevel = 1.0f;
+    if (CameraTransitionSpeed <= 0.0f)
+        CameraTransitionSpeed = 5.0f;
+    if (CameraFocusPosition == FVector2D::ZeroVector)
+        CameraFocusPosition = FVector2D(0.5f, 0.5f);
+
+    // 현재 플레이어 노드 초기화
+    CurrentPlayerNode = nullptr;
+
     // 닫기 버튼 이벤트 바인딩
     if (CloseButton)
     {
@@ -66,7 +77,7 @@ void UMapUIWidget::SetUIOnlyMode()
 
     // UI Only 모드로 설정
     FInputModeUIOnly InputMode;
-    InputMode.SetWidgetToFocus(TakeWidget());
+    //InputMode.SetWidgetToFocus(TakeWidget());
     InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 
     PlayerController->SetInputMode(InputMode);
@@ -91,16 +102,18 @@ void UMapUIWidget::RestoreGameMode()
     }
 }
 
-void UMapUIWidget::SetupMapUI(const TArray<UMapNode*>& Nodes)
-{
-    // 기존 UI 정리
-    //ClearMapUI();
 
+
+void UMapUIWidget::SetupMapUI(const TArray<UMapNode*>& Nodes, UMapNode* CurrentNode)
+{
     if (!MapCanvas)
     {
         UE_LOG(LogTemp, Error, TEXT("MapCanvas not found! Make sure to bind it in the widget blueprint."));
         return;
     }
+
+    // 현재 플레이어 노드 저장
+    CurrentPlayerNode = CurrentNode;
 
     // 각 노드에 대해 UI 버튼 생성
     for (UMapNode* Node : Nodes)
@@ -121,7 +134,6 @@ void UMapUIWidget::SetupMapUI(const TArray<UMapNode*>& Nodes)
         TArray<int32> RowPositions = GetRandomRowPositions(NodeCount);
         DepthRowPositions.Add(Depth, RowPositions);
 
-        // 로그로 배치 확인
         FString PositionString;
         for (int32 i = 0; i < RowPositions.Num(); i++)
         {
@@ -144,15 +156,11 @@ void UMapUIWidget::SetupMapUI(const TArray<UMapNode*>& Nodes)
             continue;
         }
 
-        // 2D 위치 계산
         FVector2D Position2D = CalculateOptimalNode2DPosition(Node);
-
-        // 노드 버튼 생성
         UMapNodeButton* NodeButton = CreateNodeButton(Node, Position2D);
 
         if (NodeButton)
         {
-            // UI 정보 저장
             FNodeUIInfo UIInfo;
             UIInfo.LinkedNode = Node;
             UIInfo.NodeButton = NodeButton;
@@ -166,13 +174,21 @@ void UMapUIWidget::SetupMapUI(const TArray<UMapNode*>& Nodes)
         }
     }
 
-    // 노드 상태 업데이트
     UpdateNodeStates();
-
-    // 연결선 그리기
     DrawConnectionLines();
 
-    UE_LOG(LogTemp, Log, TEXT("Map UI setup complete: %d node buttons created"), NodeUIElements.Num());
+    // 현재 노드가 있으면 해당 노드에 카메라 포커스
+    if (CurrentPlayerNode)
+    {
+        FocusCameraOnNode(CurrentPlayerNode);
+        UE_LOG(LogTemp, Log, TEXT("Map UI setup complete with camera focused on current node"));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Log, TEXT("Map UI setup complete without camera focus"));
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Total node buttons created: %d"), NodeUIElements.Num());
 }
 
 void UMapUIWidget::ClearMapUI()
@@ -544,5 +560,85 @@ TArray<int32> UMapUIWidget::GetRandomRowPositions(int32 NodeCount) const
 float UMapUIWidget::CalculateYForRowPosition(int32 RowPosition) const
 {
     return MapOrigin.Y + (RowPosition * RowSpacing);
+}
+
+void UMapUIWidget::FocusCameraOnNode(UMapNode* TargetNode)
+{
+    if (!TargetNode)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Cannot focus camera - TargetNode is null"));
+        return;
+    }
+
+    if (!MapCanvas)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Cannot focus camera - MapCanvas is null"));
+        return;
+    }
+
+    // 타겟 노드의 2D 위치 가져오기
+    FVector2D TargetPosition = GetNodePosition(TargetNode);
+
+    UE_LOG(LogTemp, Warning, TEXT("=== Camera Focus Debug ==="));
+    UE_LOG(LogTemp, Warning, TEXT("Target Node: Depth %d, Row %d"), TargetNode->Position.Depth, TargetNode->Position.Row);
+    UE_LOG(LogTemp, Warning, TEXT("Target Position: (%.1f, %.1f)"), TargetPosition.X, TargetPosition.Y);
+
+    if (TargetPosition == FVector2D::ZeroVector)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Target position is zero - Node might not be in NodeUIElements"));
+        return;
+    }
+
+    // 캔버스 크기 가져오기
+    FVector2D CanvasSize = MapCanvas->GetCachedGeometry().GetLocalSize();
+    UE_LOG(LogTemp, Warning, TEXT("Canvas Size: (%.1f, %.1f)"), CanvasSize.X, CanvasSize.Y);
+
+    // 캔버스 크기가 0이면 아직 렌더링 안된 상태
+    if (CanvasSize.X < 1.0f || CanvasSize.Y < 1.0f)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Canvas not ready yet, trying again next frame"));
+
+        // 다음 프레임에 다시 시도
+        FTimerHandle TimerHandle;
+        GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, TargetNode]()
+        {
+            FocusCameraOnNode(TargetNode);
+        }, 0.1f, false);
+        return;
+    }
+
+    // CameraFocusPosition을 사용하여 화면상 위치 계산
+    // (0.5, 0.5) = 정중앙, (0.3, 0.5) = 왼쪽으로 치우침, (0.7, 0.5) = 오른쪽으로 치우침
+    FVector2D FocusPoint = CanvasSize * CameraFocusPosition;
+    UE_LOG(LogTemp, Warning, TEXT("Focus Point: (%.1f, %.1f) - CameraFocusPosition: (%.2f, %.2f)"),
+        FocusPoint.X, FocusPoint.Y, CameraFocusPosition.X, CameraFocusPosition.Y);
+
+    // 타겟 노드가 FocusPoint에 오도록 캔버스 오프셋 계산
+    FVector2D NewOffset = FocusPoint - TargetPosition;
+    UE_LOG(LogTemp, Warning, TEXT("Calculated Offset (before zoom): (%.1f, %.1f)"), NewOffset.X, NewOffset.Y);
+
+    // 줌 레벨 적용
+    NewOffset *= CameraZoomLevel;
+    UE_LOG(LogTemp, Warning, TEXT("Final Offset (after zoom %.2f): (%.1f, %.1f)"), CameraZoomLevel, NewOffset.X, NewOffset.Y);
+
+    // 캔버스 위치 설정 (RenderTransform 사용)
+    MapCanvas->SetRenderTranslation(NewOffset);
+    MapCanvas->SetRenderScale(FVector2D(CameraZoomLevel, CameraZoomLevel));
+
+    UE_LOG(LogTemp, Log, TEXT("Camera focused successfully on node at Depth %d, Row %d"),
+        TargetNode->Position.Depth, TargetNode->Position.Row);
+    UE_LOG(LogTemp, Warning, TEXT("======================"));
+}
+
+void UMapUIWidget::CenterCameraOnCurrentNode()
+{
+    if (CurrentPlayerNode)
+    {
+        FocusCameraOnNode(CurrentPlayerNode);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Cannot center camera - CurrentPlayerNode is null"));
+    }
 }
 
