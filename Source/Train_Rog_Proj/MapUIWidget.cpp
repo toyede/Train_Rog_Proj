@@ -12,29 +12,28 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
 
-void UMapUIWidget::NativeConstruct()
+UMapUIWidget::UMapUIWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-    Super::NativeConstruct();
+    // Tick 활성화 - 부드러운 카메라 이동을 위해 필수
+    bIsFocusable = true;
+    SetIsFocusable(true);
 
-    // 기본 설정값 초기화
+    // 레이아웃 기본 설정
     DepthSpacing = 150.0f;
     RowSpacing = 100.0f;
     MapOrigin = FVector2D(100.0f, 100.0f);
     MapSize = FVector2D(1200.0f, 800.0f);
-    MaxRowsPerDepth = 6; // 기본 6칸 그리드
-
+    MaxRowsPerDepth = 6;
 
     // 기찻길 기본 설정
     RailSegmentLength = 40.0f;
     RailSegmentWidth = 16.0f;
 
-    // 카메라 설정 초기화 (블루프린트에서 설정하지 않은 경우만)
-    if (CameraZoomLevel <= 0.0f)
-        CameraZoomLevel = 1.0f;
-    if (CameraTransitionSpeed <= 0.0f)
-        CameraTransitionSpeed = 5.0f;
-    if (CameraFocusPosition == FVector2D::ZeroVector)
-        CameraFocusPosition = FVector2D(0.5f, 0.5f);
+    // 카메라 설정
+    CameraZoomLevel = 1.0f;
+    CameraTransitionSpeed = 5.0f;
+    bEnableCameraSmoothing = true;
+    CameraFocusPosition = FVector2D(0.5f, 0.5f);
 
     // 카메라 보간 변수 초기화
     CurrentCameraOffset = FVector2D::ZeroVector;
@@ -45,6 +44,11 @@ void UMapUIWidget::NativeConstruct()
 
     // 현재 플레이어 노드 초기화
     CurrentPlayerNode = nullptr;
+}
+
+void UMapUIWidget::NativeConstruct()
+{
+    Super::NativeConstruct();
 
     // 닫기 버튼 이벤트 바인딩
     if (CloseButton)
@@ -52,12 +56,12 @@ void UMapUIWidget::NativeConstruct()
         CloseButton->OnClicked.AddDynamic(this, &UMapUIWidget::CloseMapUI);
     }
 
-    UE_LOG(LogTemp, Log, TEXT("MapUIWidget constructed"));
-
-    // UI Only 모드로 전환 (NativeConstruct 끝에서 호출)
+    // UI Only 모드로 전환
     SetUIOnlyMode();
 
-    UE_LOG(LogTemp, Log, TEXT("MapUIWidget constructed - UI Only mode activated"));
+    UE_LOG(LogTemp, Log, TEXT("MapUIWidget constructed - Camera: Zoom=%.2f, Focus=(%.2f, %.2f), Smoothing=%s"),
+        CameraZoomLevel, CameraFocusPosition.X, CameraFocusPosition.Y,
+        bEnableCameraSmoothing ? TEXT("ON") : TEXT("OFF"));
 }
 
 
@@ -155,6 +159,8 @@ void UMapUIWidget::RestoreGameMode()
         UE_LOG(LogTemp, Log, TEXT("Restored to Game Only mode and hid mouse cursor"));
     }
 }
+
+
 
 
 
@@ -662,7 +668,6 @@ void UMapUIWidget::FocusCameraOnNode(UMapNode* TargetNode)
     }
 
     // CameraFocusPosition을 사용하여 화면상 위치 계산
-    // (0.5, 0.5) = 정중앙, (0.3, 0.5) = 왼쪽으로 치우침, (0.7, 0.5) = 오른쪽으로 치우침
     FVector2D FocusPoint = CanvasSize * CameraFocusPosition;
     UE_LOG(LogTemp, Warning, TEXT("Focus Point: (%.1f, %.1f) - CameraFocusPosition: (%.2f, %.2f)"),
         FocusPoint.X, FocusPoint.Y, CameraFocusPosition.X, CameraFocusPosition.Y);
@@ -675,11 +680,30 @@ void UMapUIWidget::FocusCameraOnNode(UMapNode* TargetNode)
     NewOffset *= CameraZoomLevel;
     UE_LOG(LogTemp, Warning, TEXT("Final Offset (after zoom %.2f): (%.1f, %.1f)"), CameraZoomLevel, NewOffset.X, NewOffset.Y);
 
-    // 캔버스 위치 설정 (RenderTransform 사용)
-    MapCanvas->SetRenderTranslation(NewOffset);
-    MapCanvas->SetRenderScale(FVector2D(CameraZoomLevel, CameraZoomLevel));
+    // 부드러운 카메라 이동 vs 즉시 이동
+    if (bEnableCameraSmoothing)
+    {
+        // 부드러운 이동 - 목표값 설정
+        TargetCameraOffset = NewOffset;
+        TargetCameraScale = CameraZoomLevel;
+        bIsCameraMoving = true;
 
-    UE_LOG(LogTemp, Log, TEXT("Camera focused successfully on node at Depth %d, Row %d"),
+        UE_LOG(LogTemp, Warning, TEXT("Camera smooth movement started to node at Depth %d, Row %d"),
+            TargetNode->Position.Depth, TargetNode->Position.Row);
+    }
+    else
+    {
+        // 즉시 이동
+        CurrentCameraOffset = NewOffset;
+        CurrentCameraScale = CameraZoomLevel;
+        MapCanvas->SetRenderTranslation(NewOffset);
+        MapCanvas->SetRenderScale(FVector2D(CameraZoomLevel, CameraZoomLevel));
+
+        UE_LOG(LogTemp, Warning, TEXT("Camera instantly focused on node at Depth %d, Row %d"),
+            TargetNode->Position.Depth, TargetNode->Position.Row);
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Camera focused successfully on node at Depth %d, Row 0"),
         TargetNode->Position.Depth, TargetNode->Position.Row);
     UE_LOG(LogTemp, Warning, TEXT("======================"));
 }

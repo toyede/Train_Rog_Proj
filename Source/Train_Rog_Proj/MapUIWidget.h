@@ -42,6 +42,8 @@ class TRAIN_ROG_PROJ_API UMapUIWidget : public UUserWidget
 {
 	GENERATED_BODY()
 public:
+    UMapUIWidget(const FObjectInitializer& ObjectInitializer);
+
     // 아트 에셋 설정
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Art Assets")
     class UTexture2D* MapBackgroundTexture; // 아트팀 지도 종이 이미지
