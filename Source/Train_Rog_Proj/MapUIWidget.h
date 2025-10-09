@@ -159,6 +159,7 @@ public:
 protected:
     virtual void NativeConstruct() override;
     virtual void NativeDestruct() override;
+    virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 
     // 내부 함수들
@@ -188,4 +189,11 @@ private:
     // 현재 플레이어 노드 (카메라 포커스용)
     UPROPERTY()
     UMapNode* CurrentPlayerNode;
+
+    // 카메라 보간용 변수
+    FVector2D CurrentCameraOffset;
+    FVector2D TargetCameraOffset;
+    float CurrentCameraScale;
+    float TargetCameraScale;
+    bool bIsCameraMoving;
 };

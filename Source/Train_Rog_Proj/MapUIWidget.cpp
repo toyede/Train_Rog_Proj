@@ -36,6 +36,13 @@ void UMapUIWidget::NativeConstruct()
     if (CameraFocusPosition == FVector2D::ZeroVector)
         CameraFocusPosition = FVector2D(0.5f, 0.5f);
 
+    // 카메라 보간 변수 초기화
+    CurrentCameraOffset = FVector2D::ZeroVector;
+    TargetCameraOffset = FVector2D::ZeroVector;
+    CurrentCameraScale = 1.0f;
+    TargetCameraScale = 1.0f;
+    bIsCameraMoving = false;
+
     // 현재 플레이어 노드 초기화
     CurrentPlayerNode = nullptr;
 
@@ -62,6 +69,53 @@ void UMapUIWidget::NativeDestruct()
 
     Super::NativeDestruct();
 }
+
+void UMapUIWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+    Super::NativeTick(MyGeometry, InDeltaTime);
+
+    // 카메라 부드러운 이동 처리
+    if (bEnableCameraSmoothing && bIsCameraMoving && MapCanvas)
+    {
+        // 오프셋 보간
+        CurrentCameraOffset = FMath::Vector2DInterpTo(
+            CurrentCameraOffset,
+            TargetCameraOffset,
+            InDeltaTime,
+            CameraTransitionSpeed
+        );
+
+        // 스케일 보간
+        CurrentCameraScale = FMath::FInterpTo(
+            CurrentCameraScale,
+            TargetCameraScale,
+            InDeltaTime,
+            CameraTransitionSpeed
+        );
+
+        // 캔버스에 적용
+        MapCanvas->SetRenderTranslation(CurrentCameraOffset);
+        MapCanvas->SetRenderScale(FVector2D(CurrentCameraScale, CurrentCameraScale));
+
+        // 목표 지점에 도달했는지 확인 (오차 범위 1픽셀, 스케일 0.01)
+        float OffsetDistance = FVector2D::Distance(CurrentCameraOffset, TargetCameraOffset);
+        float ScaleDifference = FMath::Abs(CurrentCameraScale - TargetCameraScale);
+
+        if (OffsetDistance < 1.0f && ScaleDifference < 0.01f)
+        {
+            // 목표 도달 - 정확한 값으로 설정하고 이동 중지
+            CurrentCameraOffset = TargetCameraOffset;
+            CurrentCameraScale = TargetCameraScale;
+            MapCanvas->SetRenderTranslation(CurrentCameraOffset);
+            MapCanvas->SetRenderScale(FVector2D(CurrentCameraScale, CurrentCameraScale));
+            bIsCameraMoving = false;
+
+            UE_LOG(LogTemp, Log, TEXT("Camera movement completed"));
+        }
+    }
+}
+
+
 
 void UMapUIWidget::SetUIOnlyMode()
 {
