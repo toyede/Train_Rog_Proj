@@ -55,6 +55,9 @@ ATrainCharacter::ATrainCharacter()
 
     GetCharacterMovement()->bOrientRotationToMovement = false;
     GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
+
+    bIsCrouching = false;
+    bIsCrouchMove = false;
 }
 
 // 게임 시작 시 초기화
@@ -172,6 +175,9 @@ void ATrainCharacter::ToggleCrouch()
 // 이동 처리
 void ATrainCharacter::Move(const FInputActionValue& Value)
 {
+    if (bIsCrouchMove)
+        return; // 앉아있으면 이동 무시
+    
     FVector2D MovementVector = Value.Get<FVector2D>();
     if (Controller == nullptr || MovementVector.IsNearlyZero())
         return;
@@ -194,7 +200,13 @@ void ATrainCharacter::Move(const FInputActionValue& Value)
 }
 
 // 점프 시작
-void ATrainCharacter::StartJump() { Jump(); }
+void ATrainCharacter::StartJump()
+{
+    if (bIsCrouchMove)
+        return; // 앉아있으면 이동 무시
+    
+    Jump();
+}
 
 // 점프 종료
 void ATrainCharacter::StopJump() { StopJumping(); }
@@ -204,6 +216,7 @@ void ATrainCharacter::StartCrouch()
 {
     Crouch();
     bIsCrouching = true;
+    bIsCrouchMove = true;
     GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed * 0.f;
     //CameraBoom->TargetOffset = CrouchCameraOffset;
 }
@@ -312,6 +325,7 @@ void ATrainCharacter::RemapKey(UInputAction* InputAction, FKey OldKey, FKey NewK
 void ATrainCharacter::SetNormalWalkSpeed()
 {
     GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
+    bIsCrouchMove = false;
 }
 
 void ATrainCharacter::LevelUp()

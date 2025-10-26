@@ -107,6 +107,7 @@ protected:
     float RunSpeedMultiplier = 1.5f; // 달리기 배속 (x1.5)
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Run")
     bool bIsCrouching;
+    bool bIsCrouchMove;
 
     /** ========== 인터랙션 관련 ========== */
     // 라인트레이스 최대 거리 (상호작용 거리)
