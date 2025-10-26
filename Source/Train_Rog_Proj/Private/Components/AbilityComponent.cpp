@@ -37,11 +37,11 @@ void UAbilityComponent::IncreaseDamage(int stack)
 	{
 		Damage += stackDamage * 1.f;
 	}
-	else if (stack <= 200)
+	else if (stack <= 300)
 	{
 		Damage += stackDamage * 0.8f;
 	}
-	else if (stack <= 300)
+	else if (stack <= 500)
 	{
 		Damage += stackDamage * 0.5f;
 	}
@@ -56,11 +56,11 @@ void UAbilityComponent::IncreaseDefense(int stack)
 	{
 		Defense += stackDefense * 1.f;
 	}
-	else if (stack <= 200)
+	else if (stack <= 300)
 	{
 		Defense += stackDefense * 0.8f;
 	}
-	else if (stack <= 300)
+	else if (stack <= 500)
 	{
 		Defense += stackDefense * 0.5f;
 	}
@@ -76,11 +76,11 @@ void UAbilityComponent::IncreaseAttackSpeed(int stack)
 	{
 		AttackSpeed += stackASpeed * 1.f;
 	}
-	else if (stack <= 200)
+	else if (stack <= 300)
 	{
 		AttackSpeed += stackASpeed * 0.8f;
 	}
-	else if (stack <= 300)
+	else if (stack <= 500)
 	{
 		AttackSpeed += stackASpeed * 0.5f;
 	}
@@ -96,11 +96,11 @@ void UAbilityComponent::IncreaseCriticalChance(int stack)
 	{
 		CriticalChance += stackCriChance * 1.f;
 	}
-	else if (stack <= 200)
+	else if (stack <= 300)
 	{
 		CriticalChance += stackCriChance * 0.8f;
 	}
-	else if (stack <= 300)
+	else if (stack <= 500)
 	{
 		CriticalChance += stackCriChance * 0.5f;
 	}
@@ -116,11 +116,11 @@ void UAbilityComponent::IncreaseCriticalDamage(int stack)
 	{
 		CriticalDamage += stackCriDamage * 1.f;
 	}
-	else if (stack <= 200)
+	else if (stack <= 300)
 	{
 		CriticalDamage += stackCriDamage * 0.8f;
 	}
-	else if (stack <= 300)
+	else if (stack <= 500)
 	{
 		CriticalDamage += stackCriDamage * 0.5f;
 	}
@@ -136,11 +136,11 @@ void UAbilityComponent::DecreaseDamage(int stack)
 	{
 		Damage -= stackDamage * 1.f;
 	}
-	else if (stack <= 200)
+	else if (stack <= 300)
 	{
 		Damage -= stackDamage * 0.8f;
 	}
-	else if (stack <= 300)
+	else if (stack <= 500)
 	{
 		Damage -= stackDamage * 0.5f;
 	}
@@ -156,11 +156,11 @@ void UAbilityComponent::DecreaseDefense(int stack)
 	{
 		Defense -= stackDefense * 1.f;
 	}
-	else if (stack <= 200)
+	else if (stack <= 300)
 	{
 		Defense -= stackDefense * 0.8f;
 	}
-	else if (stack <= 300)
+	else if (stack <= 500)
 	{
 		Defense -= stackDefense * 0.5f;
 	}
@@ -176,11 +176,11 @@ void UAbilityComponent::DecreaseAttackSpeed(int stack)
 	{
 		AttackSpeed -= stackASpeed * 1.f;
 	}
-	else if (stack <= 200)
+	else if (stack <= 300)
 	{
 		AttackSpeed -= stackASpeed * 0.8f;
 	}
-	else if (stack <= 300)
+	else if (stack <= 500)
 	{
 		AttackSpeed -= stackASpeed * 0.5f;
 	}
@@ -196,11 +196,11 @@ void UAbilityComponent::DecreaseCriticalChance(int stack)
 	{
 		CriticalChance -= stackCriChance * 1.f;
 	}
-	else if (stack <= 200)
+	else if (stack <= 300)
 	{
 		CriticalChance -= stackCriChance * 0.8f;
 	}
-	else if (stack <= 300)
+	else if (stack <= 500)
 	{
 		CriticalChance -= stackCriChance * 0.5f;
 	}
@@ -216,11 +216,11 @@ void UAbilityComponent::DecreaseCriticalDamage(int stack)
 	{
 		CriticalDamage -= stackCriDamage * 1.f;
 	}
-	else if (stack <= 200)
+	else if (stack <= 300)
 	{
 		CriticalDamage -= stackCriDamage * 0.8f;
 	}
-	else if (stack <= 300)
+	else if (stack <= 500)
 	{
 		CriticalDamage -= stackCriDamage * 0.5f;
 	}

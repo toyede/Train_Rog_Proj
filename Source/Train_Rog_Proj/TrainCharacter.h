@@ -5,6 +5,7 @@
 #include "EnhancedInputComponent.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
+#include "InputActionValue.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 // 김재훈 추가
@@ -19,6 +20,10 @@
  * - Enhanced Input 시스템 활용
  * - 플레이어 스탯 성장 시스템 포함
  */
+
+class UInputAction;
+class UInputMappingContext;
+
 UCLASS()
 class TRAIN_ROG_PROJ_API ATrainCharacter : public ACharacter
 {
@@ -65,7 +70,7 @@ protected:
     /** 달리기 입력 액션 */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
     UInputAction* RunAction;
-
+    
     /** ========== 카메라 관련 ========== */
     // 3인칭 카메라 붐(SpringArm)
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
@@ -91,10 +96,16 @@ protected:
     FVector DefaultCameraOffset;
     FVector CrouchCameraOffset;
 
+    /** 앉기 토글 함수 */
+    void ToggleCrouch();
+
     /** ========== 이동/기본 동작 관련 ========== */
     float NormalWalkSpeed;          // 기본 걷기 속도
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Run")
     bool bIsRunning;                // 현재 달리기 상태 여부
     float RunSpeedMultiplier = 1.5f; // 달리기 배속 (x1.5)
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Run")
+    bool bIsCrouching;
 
     /** ========== 인터랙션 관련 ========== */
     // 라인트레이스 최대 거리 (상호작용 거리)
@@ -118,6 +129,10 @@ protected:
 public: 
     /** 매 프레임 호출 */
     virtual void Tick(float DeltaTime) override;
+    
+    /** 현재 에임 Pitch */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+    float AimPitch;
 
     //체력 컴포넌트
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) class UHealthComponent* HealthComponent;
