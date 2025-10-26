@@ -8,6 +8,7 @@
 #include "DrawDebugHelpers.h"
 #include <cstdlib>
 #include <ctime>
+#include "GameFramework/Character.h"
 #include "Components/AbilityComponent.h"
 #include "Components/HealthComponent.h"
 //#include "InteractInterface.h"
@@ -212,7 +213,7 @@ void ATrainCharacter::StopCrouch()
 {
     UnCrouch();
     bIsCrouching = false;
-    GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
+    GetWorldTimerManager().SetTimer(TimerHandle_StopCrouch, this, &ATrainCharacter::SetNormalWalkSpeed, 1.1f, false);
 }
 
 // 줌 인/아웃
@@ -306,6 +307,11 @@ void ATrainCharacter::RemapKey(UInputAction* InputAction, FKey OldKey, FKey NewK
             Subsystem->AddMappingContext(DefaultMappingContext, 0);
         }
     }
+}
+
+void ATrainCharacter::SetNormalWalkSpeed()
+{
+    GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
 }
 
 void ATrainCharacter::LevelUp()

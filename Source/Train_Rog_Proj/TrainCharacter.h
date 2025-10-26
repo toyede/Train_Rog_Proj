@@ -8,6 +8,7 @@
 #include "InputActionValue.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "TimerManager.h"
 // 김재훈 추가
 #include "Dialogue/InteractInterface.h"
 #include "DrawDebugHelpers.h"
@@ -157,6 +158,9 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player Stats Stacks")
     int StatPoint;
 
+    FTimerHandle TimerHandle_StopCrouch;
+
+    void SetNormalWalkSpeed();
    
     /** 레벨업 함수 */
     UFUNCTION(BlueprintCallable, Category = "Player Stats Functions")
