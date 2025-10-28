@@ -89,6 +89,12 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
     float CameraBaseLength;
 
+    FVector DefaultBoomRelativeLocation; 
+
+    // 추가: 줌인할 소켓 이름 (에디터에서 설정 가능하게)
+    UPROPERTY(EditAnywhere, Category = "Camera")
+    FName ZoomSocketName = FName("ZoomLocation");
+    
     // 줌 시 카메라 거리
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
     float CameraZoomLength;

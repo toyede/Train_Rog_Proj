@@ -232,14 +232,26 @@ void ATrainCharacter::StopCrouch()
 // 줌 인/아웃
 void ATrainCharacter::ZoomIn()
 {
+    if (bIsZooming || !GetMesh()) return;
+
     CameraBaseLength = CameraBoom->TargetArmLength;
-    CameraBoom->TargetArmLength = -50.f;
+    DefaultBoomRelativeLocation = CameraBoom->GetRelativeLocation();
+    
+    FVector SocketRelativeLocation = GetMesh()->GetSocketTransform(ZoomSocketName, ERelativeTransformSpace::RTS_Component).GetLocation();
+    
+    CameraBoom->SetRelativeLocation(SocketRelativeLocation);
+    CameraBoom->TargetArmLength = 0.f;
+    
     bIsZooming = true;
 }
 
 void ATrainCharacter::ZoomOut()
 {
+    if (!bIsZooming) return;
+    
+    CameraBoom->SetRelativeLocation(DefaultBoomRelativeLocation);
     CameraBoom->TargetArmLength = CameraBaseLength;
+    
     bIsZooming = false;
 }
 
