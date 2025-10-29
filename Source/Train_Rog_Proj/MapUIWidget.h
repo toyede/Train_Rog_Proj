@@ -72,6 +72,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Layout")
     FVector2D MapSize; // 지도 전체 크기 (아트 에셋 크기)
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Layout")
+    int32 MaxRowsPerDepth; // 각 깊이당 최대 행 수 (기본 6)
+
+
     // 노드 버튼 블루프린트 클래스들 (아트팀 디자인)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Node Art Assets")
     TSubclassOf<class UMapNodeButton> StartNodeButtonClass;
@@ -129,11 +133,26 @@ protected:
     virtual void NativeConstruct() override;
 
     // 내부 함수들
-    FVector2D CalculateNode2DPosition(UMapNode* Node) const;
+    FVector2D CalculateOptimalNode2DPosition(UMapNode* Node) const;
     class UMapNodeButton* CreateNodeButton(UMapNode* Node, const FVector2D& Position);
     TSubclassOf<class UMapNodeButton> GetButtonClassForNodeType(ENodeType NodeType) const;
     void DrawConnectionLines();
     void CreateRailBetweenNodes(FVector2D StartPos, FVector2D EndPos);
     class UImage* CreateRailSegment(FVector2D Position, float RotationDegrees);
     FVector2D GetNodePosition(UMapNode* Node) const;
+
+    // 노드 배치 관련 함수들
+    TArray<int32> GetRandomRowPositions(int32 NodeCount) const;
+    float CalculateYForRowPosition(int32 RowPosition) const;
+
+private:
+    // 깊이별 노드 수 캐시
+    UPROPERTY()
+    TMap<int32, int32> DepthNodeCounts;
+
+    // 깊이별 랜덤 행 위치 캐시 (깊이 → 행 위치 배열)
+    mutable TMap<int32, TArray<int32>> DepthRowPositions;
+
+    // 랜덤 스트림 (일관된 배치를 위해)
+    mutable FRandomStream RandomStream;
 };

@@ -52,6 +52,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Health)
 	void DecreaseHP(float amount);
 
+	//체력 증가 함수 (스텟을 통한)
+	UFUNCTION(BlueprintCallable, Category = Health)
+	void IncreaseMaxHP(int stack);
+	
+	//체력 감소 함수 (스텟을 통한)
+	UFUNCTION(BlueprintCallable, Category = Health)
+	void DecreaseMaxHP(int stack);
+
 	UFUNCTION(BlueprintCallable)
 	float GetRandomStat(float Standard, float Offset);
 };

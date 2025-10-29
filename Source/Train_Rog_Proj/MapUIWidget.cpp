@@ -20,6 +20,8 @@ void UMapUIWidget::NativeConstruct()
     RowSpacing = 100.0f;
     MapOrigin = FVector2D(100.0f, 100.0f);
     MapSize = FVector2D(1200.0f, 800.0f);
+    MaxRowsPerDepth = 6; // 기본 6칸 그리드
+
 
     // 기찻길 기본 설정
     RailSegmentLength = 40.0f;
@@ -50,13 +52,47 @@ void UMapUIWidget::SetupMapUI(const TArray<UMapNode*>& Nodes)
     // 각 노드에 대해 UI 버튼 생성
     for (UMapNode* Node : Nodes)
     {
+        if (Node)
+        {
+            int32 Depth = Node->Position.Depth;
+            DepthNodeCounts.FindOrAdd(Depth)++;
+        }
+    }
+
+    // 각 깊이별로 랜덤 행 위치 미리 계산
+    for (const auto& DepthCount : DepthNodeCounts)
+    {
+        int32 Depth = DepthCount.Key;
+        int32 NodeCount = DepthCount.Value;
+
+        TArray<int32> RowPositions = GetRandomRowPositions(NodeCount);
+        DepthRowPositions.Add(Depth, RowPositions);
+
+        // 로그로 배치 확인
+        FString PositionString;
+        for (int32 i = 0; i < RowPositions.Num(); i++)
+        {
+            PositionString += FString::Printf(TEXT("%d"), RowPositions[i]);
+            if (i < RowPositions.Num() - 1)
+            {
+                PositionString += TEXT(", ");
+            }
+        }
+
+        UE_LOG(LogTemp, Log, TEXT("Depth %d: %d nodes at positions [%s]"),
+            Depth, NodeCount, *PositionString);
+    }
+
+    // 각 노드에 대해 UI 버튼 생성
+    for (UMapNode* Node : Nodes)
+    {
         if (!Node)
         {
             continue;
         }
 
         // 2D 위치 계산
-        FVector2D Position2D = CalculateNode2DPosition(Node);
+        FVector2D Position2D = CalculateOptimalNode2DPosition(Node);
 
         // 노드 버튼 생성
         UMapNodeButton* NodeButton = CreateNodeButton(Node, Position2D);
@@ -71,8 +107,9 @@ void UMapUIWidget::SetupMapUI(const TArray<UMapNode*>& Nodes)
 
             NodeUIElements.Add(UIInfo);
 
-            UE_LOG(LogTemp, Log, TEXT("Created UI button for %s node at (%f, %f)"),
-                *Node->GetNodeTypeString(), Position2D.X, Position2D.Y);
+            UE_LOG(LogTemp, Log, TEXT("Created UI button for %s node at (%f, %f) - Depth %d, Row %d"),
+                *Node->GetNodeTypeString(), Position2D.X, Position2D.Y,
+                Node->Position.Depth, Node->Position.Row);
         }
     }
 
@@ -141,7 +178,7 @@ void UMapUIWidget::ClearAllRails()
     RailImages.Empty();
 }
 
-
+/*
 FVector2D UMapUIWidget::CalculateNode2DPosition(UMapNode* Node) const
 {
     if (!Node)
@@ -154,6 +191,45 @@ FVector2D UMapUIWidget::CalculateNode2DPosition(UMapNode* Node) const
     float Y = MapOrigin.Y + (Node->Position.Row * RowSpacing);
 
     // 맵 크기 범위 내로 제한 (선택사항)
+    X = FMath::Clamp(X, 0.0f, MapSize.X);
+    Y = FMath::Clamp(Y, 0.0f, MapSize.Y);
+
+    return FVector2D(X, Y);
+}
+*/
+
+
+
+FVector2D UMapUIWidget::CalculateOptimalNode2DPosition(UMapNode* Node) const
+{
+    if (!Node)
+    {
+        return FVector2D::ZeroVector;
+    }
+
+    // X 좌표는 깊이 기반
+    float X = MapOrigin.X + (Node->Position.Depth * DepthSpacing);
+
+    // Y 좌표는 미리 계산된 랜덤 행 위치 사용
+    float Y = MapOrigin.Y;
+
+    int32 Depth = Node->Position.Depth;
+    int32 Row = Node->Position.Row;
+
+    const TArray<int32>* RowPositions = DepthRowPositions.Find(Depth);
+    if (RowPositions && Row >= 0 && Row < RowPositions->Num())
+    {
+        int32 RowPosition = (*RowPositions)[Row];
+        Y = CalculateYForRowPosition(RowPosition);
+    }
+    else
+    {
+        // fallback: 기존 방식
+        Y = MapOrigin.Y + (Row * RowSpacing);
+        UE_LOG(LogTemp, Warning, TEXT("Using fallback position for Node at Depth %d, Row %d"), Depth, Row);
+    }
+
+    // 맵 크기 범위 내로 제한
     X = FMath::Clamp(X, 0.0f, MapSize.X);
     Y = FMath::Clamp(Y, 0.0f, MapSize.Y);
 
@@ -359,6 +435,59 @@ FVector2D UMapUIWidget::GetNodePosition(UMapNode* Node) const
     }
 
     // 찾지 못한 경우 위치 계산
-    return CalculateNode2DPosition(Node);
+    return CalculateOptimalNode2DPosition(Node);
+}
+
+TArray<int32> UMapUIWidget::GetRandomRowPositions(int32 NodeCount) const
+{
+    TArray<int32> Positions;
+
+    if (NodeCount <= 0)
+    {
+        return Positions;
+    }
+
+    // 1개인 경우 중앙에 배치
+    if (NodeCount == 1)
+    {
+        int32 CenterPosition = (MaxRowsPerDepth - 1) / 2;
+        Positions.Add(CenterPosition);
+        return Positions;
+    }
+
+    // MaxRowsPerDepth개 이상인 경우 모든 칸 사용
+    if (NodeCount >= MaxRowsPerDepth)
+    {
+        for (int32 i = 0; i < MaxRowsPerDepth; i++)
+        {
+            Positions.Add(i);
+        }
+        return Positions;
+    }
+
+    // 2~(MaxRowsPerDepth-1)개인 경우 0~(MaxRowsPerDepth-1)번 칸 중에서 랜덤으로 선택
+    TArray<int32> AvailablePositions;
+    for (int32 i = 0; i < MaxRowsPerDepth; i++)
+    {
+        AvailablePositions.Add(i);
+    }
+
+    // 랜덤으로 NodeCount개만큼 선택
+    for (int32 i = 0; i < NodeCount && AvailablePositions.Num() > 0; i++)
+    {
+        int32 RandomIndex = RandomStream.RandRange(0, AvailablePositions.Num() - 1);
+        Positions.Add(AvailablePositions[RandomIndex]);
+        AvailablePositions.RemoveAt(RandomIndex);
+    }
+
+    // 선택된 위치들을 정렬 (위에서 아래 순서로)
+    Positions.Sort();
+
+    return Positions;
+}
+
+float UMapUIWidget::CalculateYForRowPosition(int32 RowPosition) const
+{
+    return MapOrigin.Y + (RowPosition * RowSpacing);
 }
 
