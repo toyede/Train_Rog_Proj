@@ -27,6 +27,32 @@ void UMapGenerator::GenerateMap()
 	}
 	RandomStream.Initialize(SeedToUse);
 
+	UE_LOG(LogTemp, Log, TEXT("=== Starting Multi-Stage Map Generation ==="));
+	UE_LOG(LogTemp, Log, TEXT("Number of Stages: %d"), GenerationSettings.NumberOfStages);
+
+	// 각 스테이지 생성
+	for (int32 Stage = 1; Stage <= GenerationSettings.NumberOfStages; Stage++)
+	{
+		UE_LOG(LogTemp, Log, TEXT("--- Generating Stage %d ---"), Stage);
+		GenerateSingleStage(Stage);
+	}
+
+	// 스테이지 간 연결
+	ConnectStageTransitions();
+
+	// 모든 노드에 접근 불가 막기
+	UpdateNodeAccessibility();
+
+	// 시작 노드를 현재 위치로 설정
+	SetPlayerPosition(GetStartNode());
+
+	// 맵 생성 완료 이벤트 호출
+	OnMapGenerated.Broadcast(AllNodes.Num());
+
+	UE_LOG(LogTemp, Log, TEXT("=== Map generation complete ==="));
+	UE_LOG(LogTemp, Log, TEXT("Total nodes created: %d"), AllNodes.Num());
+	UE_LOG(LogTemp, Log, TEXT("Total stages: %d"), GenerationSettings.NumberOfStages);
+	/*
 	//절차적 노드 개수 생성
 	TArray<int32> ActualNodesPerDepth;
 
@@ -87,6 +113,199 @@ void UMapGenerator::GenerateMap()
 	OnMapGenerated.Broadcast(AllNodes.Num());
 
 	UE_LOG(LogTemp, Log, TEXT("Map generation complete. Total nodes: %d"), AllNodes.Num());
+	*/
+}
+
+
+
+void UMapGenerator::GenerateSingleStage(int32 StageNumber)
+{
+	int32 DepthOffset = (StageNumber - 1) * 7;
+
+	UE_LOG(LogTemp, Log, TEXT("Stage %d - DepthOffset: %d (ActualDepth will be %d to %d)"),
+		StageNumber, DepthOffset, DepthOffset, DepthOffset + 6);
+
+	// 절차적 노드 개수 생성
+	TArray<int32> ActualNodesPerDepth;
+
+	// LocalDepth 0: 시작 노드 고정
+	ActualNodesPerDepth.Add(1);
+	// LocalDepth 1: 무조건 3개 고정
+	ActualNodesPerDepth.Add(3);
+
+	// LocalDepth 2~5: 연결 제약 조건을 고려한 절차적 생성
+	for (int32 LocalDepth = 2; LocalDepth <= 5; ++LocalDepth)
+	{
+		int32 PreviousDepthNodeCount = ActualNodesPerDepth[LocalDepth - 1];
+		int32 MaxPossibleNodes = PreviousDepthNodeCount * 3;
+		int32 ActualMaxNodes = FMath::Min(GenerationSettings.MaxNodesPerDepth, MaxPossibleNodes);
+		int32 MinNodes = FMath::Min(3, ActualMaxNodes);
+
+		int32 RandomNodeCount = RandomStream.RandRange(MinNodes, ActualMaxNodes);
+		ActualNodesPerDepth.Add(RandomNodeCount);
+
+		if (LocalDepth == 5)
+		{
+			UE_LOG(LogTemp, Log, TEXT("  LocalDepth %d (Shop): PrevNodes = %d, MaxPossible = %d, Generated = %d"),
+				LocalDepth, PreviousDepthNodeCount, MaxPossibleNodes, RandomNodeCount);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("  LocalDepth %d: PrevNodes = %d, MaxPossible = %d, Generated = %d"),
+				LocalDepth, PreviousDepthNodeCount, MaxPossibleNodes, RandomNodeCount);
+		}
+	}
+
+	ActualNodesPerDepth.Add(1); // LocalDepth 6: 보스 노드
+
+	// 깊이별 노드 생성
+	for (int32 LocalDepth = 0; LocalDepth < ActualNodesPerDepth.Num(); LocalDepth++)
+	{
+		int32 ActualDepth = LocalDepth + DepthOffset;
+		int32 NodeCount = ActualNodesPerDepth[LocalDepth];
+
+		// 노드 생성
+		TArray<UMapNode*> NodesAtThisDepth;
+		for (int32 Row = 0; Row < NodeCount; Row++)
+		{
+			UMapNode* NewNode = NewObject<UMapNode>(this);
+			NewNode->Position = FNodePosition(ActualDepth, Row);
+
+			if (LocalDepth == 0)
+			{
+				NewNode->NodeType = ENodeType::Start;
+			}
+			else if (LocalDepth == 5)
+			{
+				NewNode->NodeType = ENodeType::Shop;
+			}
+			else if (LocalDepth == 6)
+			{
+				NewNode->NodeType = ENodeType::Boss;
+			}
+			else
+			{
+				NewNode->NodeType = ENodeType::Normal;
+			}
+
+			NodesAtThisDepth.Add(NewNode);
+			AllNodes.Add(NewNode);
+		}
+		NodesByDepth.Add(ActualDepth, NodesAtThisDepth);
+	}
+
+	// 특수 노드 타입 할당 (이 스테이지의 Normal 노드들에만 적용)
+	TArray<UMapNode*> StageNormalNodes;
+	for (int32 LocalDepth = 1; LocalDepth <= 4; LocalDepth++)
+	{
+		int32 ActualDepth = LocalDepth + DepthOffset;
+		TArray<UMapNode*>* NodesAtDepth = NodesByDepth.Find(ActualDepth);
+		if (NodesAtDepth)
+		{
+			for (UMapNode* Node : *NodesAtDepth)
+			{
+				if (Node && Node->NodeType == ENodeType::Normal)
+				{
+					StageNormalNodes.Add(Node);
+				}
+			}
+		}
+	}
+
+	if (StageNormalNodes.Num() > 0)
+	{
+		ShuffleArray(StageNormalNodes);
+		int32 NodeIndex = 0;
+
+		// 상점 노드 할당
+		int32 AdditionalShopNodeCount = RandomStream.RandRange(GenerationSettings.MinShopNodes, GenerationSettings.MaxShopNodes);
+		AdditionalShopNodeCount = FMath::Min(AdditionalShopNodeCount, StageNormalNodes.Num() - NodeIndex);
+
+		for (int32 i = 0; i < AdditionalShopNodeCount && NodeIndex < StageNormalNodes.Num(); i++)
+		{
+			StageNormalNodes[NodeIndex]->NodeType = ENodeType::Shop;
+			NodeIndex++;
+		}
+
+		// 수리 노드 할당
+		int32 RepairNodeCount = RandomStream.RandRange(GenerationSettings.MinRepairNodes, GenerationSettings.MaxRepairNodes);
+		RepairNodeCount = FMath::Min(RepairNodeCount, StageNormalNodes.Num() - NodeIndex);
+
+		for (int32 i = 0; i < RepairNodeCount && NodeIndex < StageNormalNodes.Num(); i++)
+		{
+			StageNormalNodes[NodeIndex]->NodeType = ENodeType::Repair;
+			NodeIndex++;
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("  Stage %d special nodes: Additional Shop %d, Repair %d"),
+			StageNumber, AdditionalShopNodeCount, RepairNodeCount);
+	}
+
+	// 이 스테이지 내부 노드 연결
+	UE_LOG(LogTemp, Log, TEXT("  Connecting nodes within Stage %d..."), StageNumber);
+	int32 TotalConnections = 0;
+
+	for (int32 LocalDepth = 0; LocalDepth < 6; LocalDepth++)
+	{
+		int32 ActualDepth = LocalDepth + DepthOffset;
+		TArray<UMapNode*> PreviousDepthNodes = GetNodesAtDepth(ActualDepth);
+		TArray<UMapNode*> NextDepthNodes = GetNodesAtDepth(ActualDepth + 1);
+
+		if (PreviousDepthNodes.Num() == 0 || NextDepthNodes.Num() == 0)
+		{
+			continue;
+		}
+
+		int32 P = PreviousDepthNodes.Num();
+		int32 N = NextDepthNodes.Num();
+
+		if (LocalDepth == 5)
+		{
+			// 보스 전 단계 특별 처리: 모든 노드가 보스 노드에 연결
+			for (UMapNode* PrevNode : PreviousDepthNodes)
+			{
+				PrevNode->AddConnection(NextDepthNodes[0]);
+				TotalConnections++;
+			}
+			UE_LOG(LogTemp, Log, TEXT("    ActualDepth %d->%d: Boss connection - All %d nodes connected to boss"),
+				ActualDepth, ActualDepth + 1, P);
+		}
+		else if (P <= N)
+		{
+			ConnectWithNextNodeGrouping(PreviousDepthNodes, NextDepthNodes, P, N, TotalConnections);
+		}
+		else
+		{
+			ConnectWithReversedNodeGrouping(PreviousDepthNodes, NextDepthNodes, P, N, TotalConnections);
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("  Stage %d internal connections: %d"), StageNumber, TotalConnections);
+}
+
+void UMapGenerator::ConnectStageTransitions()
+{
+	UE_LOG(LogTemp, Log, TEXT("=== Connecting Stage Transitions ==="));
+
+	for (int32 Stage = 1; Stage < GenerationSettings.NumberOfStages; Stage++)
+	{
+		UMapNode* CurrentStageBoss = GetBossNodeForStage(Stage);
+		UMapNode* NextStageStart = GetStartNodeForStage(Stage + 1);
+
+		if (CurrentStageBoss && NextStageStart)
+		{
+			CurrentStageBoss->AddConnection(NextStageStart);
+			UE_LOG(LogTemp, Log, TEXT("Connected Stage %d Boss (Depth %d) -> Stage %d Start (Depth %d)"),
+				Stage, CurrentStageBoss->Position.Depth,
+				Stage + 1, NextStageStart->Position.Depth);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to connect Stage %d to Stage %d!"), Stage, Stage + 1);
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("=== Stage Transitions Complete ==="));
 }
 
 void UMapGenerator::ClearMap()
@@ -96,6 +315,7 @@ void UMapGenerator::ClearMap()
 	CurrentPlayerNode = nullptr;
 }
 
+/*
 void UMapGenerator::CreateNodesAtDepth(int32 Depth, int32 NodeCount)
 {
 	TArray<UMapNode*> NodesAtThisDepth;
@@ -126,7 +346,8 @@ void UMapGenerator::CreateNodesAtDepth(int32 Depth, int32 NodeCount)
 	}
 	NodesByDepth.Add(Depth, NodesAtThisDepth);
 }
-
+*/
+/*
 void UMapGenerator::AssignSpecialNodeTypes()
 {
 	//일반 노드들 가져오기 (깊이 5 제외 - 이미 상점으로 설정됨)
@@ -210,7 +431,7 @@ void UMapGenerator::ConnectNodes()
 
 	UE_LOG(LogTemp, Log, TEXT("Overlap grouping connection generation complete: %d total connections"), TotalConnections);
 }
-
+*/
 /*
 void UMapGenerator::ValidateAllNodesReachable()
 {
@@ -599,7 +820,13 @@ void UMapGenerator::UpdateNodeAccessibility()
 
 UMapNode* UMapGenerator::GetStartNode() const
 {
-	TArray<UMapNode*> const* StartDepthNodes = NodesByDepth.Find(0);
+	return GetStartNodeForStage(1);
+}
+
+UMapNode* UMapGenerator::GetStartNodeForStage(int32 StageNumber) const
+{
+	int32 DepthOffset = (StageNumber - 1) * 7;
+	TArray<UMapNode*> const* StartDepthNodes = NodesByDepth.Find(DepthOffset);
 	if (StartDepthNodes && StartDepthNodes->Num() > 0)
 	{
 		return (*StartDepthNodes)[0];
@@ -619,7 +846,15 @@ UMapNode* UMapGenerator::GetRepairNode() const
 
 UMapNode* UMapGenerator::GetBossNode() const
 {
-	TArray<UMapNode*> const* BossDepthNodes = NodesByDepth.Find(6);
+	// 마지막 스테이지의 보스 노드 반환
+	return GetBossNodeForStage(GenerationSettings.NumberOfStages);
+}
+
+UMapNode* UMapGenerator::GetBossNodeForStage(int32 StageNumber) const
+{
+	int32 DepthOffset = (StageNumber - 1) * 7;
+	int32 BossDepth = DepthOffset + 6;
+	TArray<UMapNode*> const* BossDepthNodes = NodesByDepth.Find(BossDepth);
 	if (BossDepthNodes && BossDepthNodes->Num() > 0)
 	{
 		return (*BossDepthNodes)[0];

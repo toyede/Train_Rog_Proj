@@ -22,7 +22,7 @@ UMapUIWidget::UMapUIWidget(const FObjectInitializer& ObjectInitializer) : Super(
     DepthSpacing = 150.0f;
     RowSpacing = 100.0f;
     MapOrigin = FVector2D(100.0f, 100.0f);
-    MapSize = FVector2D(1200.0f, 800.0f);
+    MapSize = FVector2D(6200.0f, 800.0f);
     MaxRowsPerDepth = 6;
 
     // 기찻길 기본 설정
@@ -361,7 +361,7 @@ FVector2D UMapUIWidget::CalculateOptimalNode2DPosition(UMapNode* Node) const
     }
 
     // 맵 크기 범위 내로 제한
-    X = FMath::Clamp(X, 0.0f, MapSize.X);
+    //X = FMath::Clamp(X, 0.0f, MapSize.X);
     Y = FMath::Clamp(Y, 0.0f, MapSize.Y);
 
     return FVector2D(X, Y);
