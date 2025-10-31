@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/SphereComponent.h"
 #include "Enemy/Enemy.h"
 #include "Toad.generated.h"
 
@@ -13,6 +14,10 @@ UCLASS()
 class TRAIN_ROG_PROJ_API AToad : public AEnemy
 {
 	GENERATED_BODY()
+
+public:
+
+	AToad();
 
 	void BeginPlay() override;
 };
