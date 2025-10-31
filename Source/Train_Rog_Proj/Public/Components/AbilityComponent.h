@@ -55,7 +55,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") void DecreaseAttackSpeed(int stack);
 	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") void DecreaseCriticalChance(int stack);
 	UFUNCTION(BlueprintCallable, Category = "Player Stats Functions") void DecreaseCriticalDamage(int stack);
-
+	
 	float stackDamage = 1;
 	float stackDefense = 1;
 	float stackASpeed = 0.005;
