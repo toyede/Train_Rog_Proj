@@ -62,4 +62,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	float GetRandomStat(float Standard, float Offset);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	FORCEINLINE float GetHPPercent() { return CurrentHP/MaxHP; };
 };
