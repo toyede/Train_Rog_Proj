@@ -208,6 +208,14 @@
 		"directory": "C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Source"
 	},
 	{
+		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\Private\\Enemy\\FirstBoss.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Unreal_Projects\\Train_Rog_Proj\\.vscode\\compileCommands_Train_Rog_Proj\\Train_Rog_Proj.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Source"
+	},
+	{
 		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\Private\\Enemy\\Gorilla.cpp",
 		"arguments": [
 			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
@@ -233,6 +241,14 @@
 	},
 	{
 		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\Private\\Enemy\\Toad.cpp",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Unreal_Projects\\Train_Rog_Proj\\.vscode\\compileCommands_Train_Rog_Proj\\Train_Rog_Proj.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\Private\\Train.cpp",
 		"arguments": [
 			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
 			"@C:\\Unreal_Projects\\Train_Rog_Proj\\.vscode\\compileCommands_Train_Rog_Proj\\Train_Rog_Proj.1.rsp"
@@ -376,6 +392,14 @@
 		"directory": "C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Source"
 	},
 	{
+		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\Public\\Enemy\\FirstBoss.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Unreal_Projects\\Train_Rog_Proj\\.vscode\\compileCommands_Train_Rog_Proj\\Train_Rog_Proj.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Source"
+	},
+	{
 		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\Public\\Enemy\\Gorilla.h",
 		"arguments": [
 			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
@@ -401,6 +425,14 @@
 	},
 	{
 		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\Public\\Enemy\\Toad.h",
+		"arguments": [
+			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
+			"@C:\\Unreal_Projects\\Train_Rog_Proj\\.vscode\\compileCommands_Train_Rog_Proj\\Train_Rog_Proj.1.rsp"
+		],
+		"directory": "C:\\Program Files\\Epic Games\\UE_5.5\\Engine\\Source"
+	},
+	{
+		"file": "C:\\Unreal_Projects\\Train_Rog_Proj\\Source\\Train_Rog_Proj\\Public\\Train.h",
 		"arguments": [
 			"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.38.33130\\bin\\Hostx64\\x64\\cl.exe",
 			"@C:\\Unreal_Projects\\Train_Rog_Proj\\.vscode\\compileCommands_Train_Rog_Proj\\Train_Rog_Proj.1.rsp"
