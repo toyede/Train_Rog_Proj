@@ -6,6 +6,11 @@
 #include "Components/AbilityComponent.h"
 #include "Components/HealthComponent.h"
 
+AToad::AToad()
+{
+	
+}
+
 void AToad::BeginPlay()
 {
 	Super::BeginPlay();

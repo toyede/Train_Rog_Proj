@@ -9,21 +9,46 @@
 #include "Components/Image.h"
 #include "Engine/Engine.h"
 #include "Blueprint/UserWidget.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/PlayerController.h"
 
-
-void UMapUIWidget::NativeConstruct()
+UMapUIWidget::UMapUIWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-    Super::NativeConstruct();
+    // Tick 활성화 - 부드러운 카메라 이동을 위해 필수
+    bIsFocusable = true;
+    SetIsFocusable(true);
 
-    // 기본 설정값 초기화
+    // 레이아웃 기본 설정
     DepthSpacing = 150.0f;
     RowSpacing = 100.0f;
     MapOrigin = FVector2D(100.0f, 100.0f);
-    MapSize = FVector2D(1200.0f, 800.0f);
+    MapSize = FVector2D(6200.0f, 800.0f);
+    MaxRowsPerDepth = 6;
 
     // 기찻길 기본 설정
     RailSegmentLength = 40.0f;
     RailSegmentWidth = 16.0f;
+
+    // 카메라 설정
+    CameraZoomLevel = 1.0f;
+    CameraTransitionSpeed = 5.0f;
+    bEnableCameraSmoothing = true;
+    CameraFocusPosition = FVector2D(0.5f, 0.5f);
+
+    // 카메라 보간 변수 초기화
+    CurrentCameraOffset = FVector2D::ZeroVector;
+    TargetCameraOffset = FVector2D::ZeroVector;
+    CurrentCameraScale = 1.0f;
+    TargetCameraScale = 1.0f;
+    bIsCameraMoving = false;
+
+    // 현재 플레이어 노드 초기화
+    CurrentPlayerNode = nullptr;
+}
+
+void UMapUIWidget::NativeConstruct()
+{
+    Super::NativeConstruct();
 
     // 닫기 버튼 이벤트 바인딩
     if (CloseButton)
@@ -31,20 +56,156 @@ void UMapUIWidget::NativeConstruct()
         CloseButton->OnClicked.AddDynamic(this, &UMapUIWidget::CloseMapUI);
     }
 
-    UE_LOG(LogTemp, Log, TEXT("MapUIWidget constructed"));
+    // UI Only 모드로 전환
+    SetUIOnlyMode();
+
+    UE_LOG(LogTemp, Log, TEXT("MapUIWidget constructed - Camera: Zoom=%.2f, Focus=(%.2f, %.2f), Smoothing=%s"),
+        CameraZoomLevel, CameraFocusPosition.X, CameraFocusPosition.Y,
+        bEnableCameraSmoothing ? TEXT("ON") : TEXT("OFF"));
 }
 
 
 
-void UMapUIWidget::SetupMapUI(const TArray<UMapNode*>& Nodes)
+void UMapUIWidget::NativeDestruct()
 {
-    // 기존 UI 정리
-    //ClearMapUI();
+    // 위젯이 파괴될 때 Game Only 모드로 복원
+    RestoreGameMode();
 
+    Super::NativeDestruct();
+}
+
+void UMapUIWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+    Super::NativeTick(MyGeometry, InDeltaTime);
+
+    // 카메라 부드러운 이동 처리
+    if (bEnableCameraSmoothing && bIsCameraMoving && MapCanvas)
+    {
+        // 오프셋 보간
+        CurrentCameraOffset = FMath::Vector2DInterpTo(
+            CurrentCameraOffset,
+            TargetCameraOffset,
+            InDeltaTime,
+            CameraTransitionSpeed
+        );
+
+        // 스케일 보간
+        CurrentCameraScale = FMath::FInterpTo(
+            CurrentCameraScale,
+            TargetCameraScale,
+            InDeltaTime,
+            CameraTransitionSpeed
+        );
+
+        // 캔버스에 적용
+        MapCanvas->SetRenderTranslation(CurrentCameraOffset);
+        MapCanvas->SetRenderScale(FVector2D(CurrentCameraScale, CurrentCameraScale));
+
+        // 목표 지점에 도달했는지 확인 (오차 범위 1픽셀, 스케일 0.01)
+        float OffsetDistance = FVector2D::Distance(CurrentCameraOffset, TargetCameraOffset);
+        float ScaleDifference = FMath::Abs(CurrentCameraScale - TargetCameraScale);
+
+        if (OffsetDistance < 1.0f && ScaleDifference < 0.01f)
+        {
+            // 목표 도달 - 정확한 값으로 설정하고 이동 중지
+            CurrentCameraOffset = TargetCameraOffset;
+            CurrentCameraScale = TargetCameraScale;
+            MapCanvas->SetRenderTranslation(CurrentCameraOffset);
+            MapCanvas->SetRenderScale(FVector2D(CurrentCameraScale, CurrentCameraScale));
+            bIsCameraMoving = false;
+
+            UE_LOG(LogTemp, Log, TEXT("Camera movement completed"));
+        }
+    }
+}
+
+
+
+void UMapUIWidget::SetUIOnlyMode()
+{
+    APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+    if (!PlayerController)
+    {
+        UE_LOG(LogTemp, Error, TEXT("PlayerController is null in SetUIOnlyMode"));
+        return;
+    }
+
+    // 모든 입력 키 강제 해제 (눌려있던 키 입력 초기화)
+    PlayerController->FlushPressedKeys();
+
+    // UI Only 모드로 설정
+    FInputModeUIOnly InputMode;
+    //InputMode.SetWidgetToFocus(TakeWidget());
+    InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+
+    PlayerController->SetInputMode(InputMode);
+
+    // 마우스 커서 표시
+    PlayerController->bShowMouseCursor = true;
+
+    UE_LOG(LogTemp, Log, TEXT("Switched to UI Only mode with mouse cursor - Inputs flushed"));
+}
+
+void UMapUIWidget::RestoreGameMode()
+{
+    APlayerController* PlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+    if (PlayerController)
+    {
+        // Game Only 모드로 복원
+        FInputModeGameOnly InputMode;
+        PlayerController->SetInputMode(InputMode);
+        // 마우스 커서 숨기기
+        PlayerController->bShowMouseCursor = false;
+        UE_LOG(LogTemp, Log, TEXT("Restored to Game Only mode and hid mouse cursor"));
+    }
+}
+
+
+
+
+
+void UMapUIWidget::SetupMapUI(const TArray<UMapNode*>& Nodes, UMapNode* CurrentNode)
+{
     if (!MapCanvas)
     {
         UE_LOG(LogTemp, Error, TEXT("MapCanvas not found! Make sure to bind it in the widget blueprint."));
         return;
+    }
+
+    // 현재 플레이어 노드 저장
+    CurrentPlayerNode = CurrentNode;
+
+    // 각 노드에 대해 UI 버튼 생성
+    for (UMapNode* Node : Nodes)
+    {
+        if (Node)
+        {
+            int32 Depth = Node->Position.Depth;
+            DepthNodeCounts.FindOrAdd(Depth)++;
+        }
+    }
+
+    // 각 깊이별로 랜덤 행 위치 미리 계산
+    for (const auto& DepthCount : DepthNodeCounts)
+    {
+        int32 Depth = DepthCount.Key;
+        int32 NodeCount = DepthCount.Value;
+
+        TArray<int32> RowPositions = GetRandomRowPositions(NodeCount);
+        DepthRowPositions.Add(Depth, RowPositions);
+
+        FString PositionString;
+        for (int32 i = 0; i < RowPositions.Num(); i++)
+        {
+            PositionString += FString::Printf(TEXT("%d"), RowPositions[i]);
+            if (i < RowPositions.Num() - 1)
+            {
+                PositionString += TEXT(", ");
+            }
+        }
+
+        UE_LOG(LogTemp, Log, TEXT("Depth %d: %d nodes at positions [%s]"),
+            Depth, NodeCount, *PositionString);
     }
 
     // 각 노드에 대해 UI 버튼 생성
@@ -55,15 +216,11 @@ void UMapUIWidget::SetupMapUI(const TArray<UMapNode*>& Nodes)
             continue;
         }
 
-        // 2D 위치 계산
-        FVector2D Position2D = CalculateNode2DPosition(Node);
-
-        // 노드 버튼 생성
+        FVector2D Position2D = CalculateOptimalNode2DPosition(Node);
         UMapNodeButton* NodeButton = CreateNodeButton(Node, Position2D);
 
         if (NodeButton)
         {
-            // UI 정보 저장
             FNodeUIInfo UIInfo;
             UIInfo.LinkedNode = Node;
             UIInfo.NodeButton = NodeButton;
@@ -71,18 +228,27 @@ void UMapUIWidget::SetupMapUI(const TArray<UMapNode*>& Nodes)
 
             NodeUIElements.Add(UIInfo);
 
-            UE_LOG(LogTemp, Log, TEXT("Created UI button for %s node at (%f, %f)"),
-                *Node->GetNodeTypeString(), Position2D.X, Position2D.Y);
+            UE_LOG(LogTemp, Log, TEXT("Created UI button for %s node at (%f, %f) - Depth %d, Row %d"),
+                *Node->GetNodeTypeString(), Position2D.X, Position2D.Y,
+                Node->Position.Depth, Node->Position.Row);
         }
     }
 
-    // 노드 상태 업데이트
     UpdateNodeStates();
-
-    // 연결선 그리기
     DrawConnectionLines();
 
-    UE_LOG(LogTemp, Log, TEXT("Map UI setup complete: %d node buttons created"), NodeUIElements.Num());
+    // 현재 노드가 있으면 해당 노드에 카메라 포커스
+    if (CurrentPlayerNode)
+    {
+        FocusCameraOnNode(CurrentPlayerNode);
+        UE_LOG(LogTemp, Log, TEXT("Map UI setup complete with camera focused on current node"));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Log, TEXT("Map UI setup complete without camera focus"));
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Total node buttons created: %d"), NodeUIElements.Num());
 }
 
 void UMapUIWidget::ClearMapUI()
@@ -142,6 +308,8 @@ void UMapUIWidget::ClearAllRails()
 }
 
 
+
+/*
 FVector2D UMapUIWidget::CalculateNode2DPosition(UMapNode* Node) const
 {
     if (!Node)
@@ -155,6 +323,45 @@ FVector2D UMapUIWidget::CalculateNode2DPosition(UMapNode* Node) const
 
     // 맵 크기 범위 내로 제한 (선택사항)
     X = FMath::Clamp(X, 0.0f, MapSize.X);
+    Y = FMath::Clamp(Y, 0.0f, MapSize.Y);
+
+    return FVector2D(X, Y);
+}
+*/
+
+
+
+FVector2D UMapUIWidget::CalculateOptimalNode2DPosition(UMapNode* Node) const
+{
+    if (!Node)
+    {
+        return FVector2D::ZeroVector;
+    }
+
+    // X 좌표는 깊이 기반
+    float X = MapOrigin.X + (Node->Position.Depth * DepthSpacing);
+
+    // Y 좌표는 미리 계산된 랜덤 행 위치 사용
+    float Y = MapOrigin.Y;
+
+    int32 Depth = Node->Position.Depth;
+    int32 Row = Node->Position.Row;
+
+    const TArray<int32>* RowPositions = DepthRowPositions.Find(Depth);
+    if (RowPositions && Row >= 0 && Row < RowPositions->Num())
+    {
+        int32 RowPosition = (*RowPositions)[Row];
+        Y = CalculateYForRowPosition(RowPosition);
+    }
+    else
+    {
+        // fallback: 기존 방식
+        Y = MapOrigin.Y + (Row * RowSpacing);
+        UE_LOG(LogTemp, Warning, TEXT("Using fallback position for Node at Depth %d, Row %d"), Depth, Row);
+    }
+
+    // 맵 크기 범위 내로 제한
+    //X = FMath::Clamp(X, 0.0f, MapSize.X);
     Y = FMath::Clamp(Y, 0.0f, MapSize.Y);
 
     return FVector2D(X, Y);
@@ -359,6 +566,157 @@ FVector2D UMapUIWidget::GetNodePosition(UMapNode* Node) const
     }
 
     // 찾지 못한 경우 위치 계산
-    return CalculateNode2DPosition(Node);
+    return CalculateOptimalNode2DPosition(Node);
+}
+
+TArray<int32> UMapUIWidget::GetRandomRowPositions(int32 NodeCount) const
+{
+    TArray<int32> Positions;
+
+    if (NodeCount <= 0)
+    {
+        return Positions;
+    }
+
+    // 1개인 경우 중앙에 배치
+    if (NodeCount == 1)
+    {
+        int32 CenterPosition = (MaxRowsPerDepth - 1) / 2;
+        Positions.Add(CenterPosition);
+        return Positions;
+    }
+
+    // MaxRowsPerDepth개 이상인 경우 모든 칸 사용
+    if (NodeCount >= MaxRowsPerDepth)
+    {
+        for (int32 i = 0; i < MaxRowsPerDepth; i++)
+        {
+            Positions.Add(i);
+        }
+        return Positions;
+    }
+
+    // 2~(MaxRowsPerDepth-1)개인 경우 0~(MaxRowsPerDepth-1)번 칸 중에서 랜덤으로 선택
+    TArray<int32> AvailablePositions;
+    for (int32 i = 0; i < MaxRowsPerDepth; i++)
+    {
+        AvailablePositions.Add(i);
+    }
+
+    // 랜덤으로 NodeCount개만큼 선택
+    for (int32 i = 0; i < NodeCount && AvailablePositions.Num() > 0; i++)
+    {
+        int32 RandomIndex = RandomStream.RandRange(0, AvailablePositions.Num() - 1);
+        Positions.Add(AvailablePositions[RandomIndex]);
+        AvailablePositions.RemoveAt(RandomIndex);
+    }
+
+    // 선택된 위치들을 정렬 (위에서 아래 순서로)
+    Positions.Sort();
+
+    return Positions;
+}
+
+float UMapUIWidget::CalculateYForRowPosition(int32 RowPosition) const
+{
+    return MapOrigin.Y + (RowPosition * RowSpacing);
+}
+
+void UMapUIWidget::FocusCameraOnNode(UMapNode* TargetNode)
+{
+    if (!TargetNode)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Cannot focus camera - TargetNode is null"));
+        return;
+    }
+
+    if (!MapCanvas)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Cannot focus camera - MapCanvas is null"));
+        return;
+    }
+
+    // 타겟 노드의 2D 위치 가져오기
+    FVector2D TargetPosition = GetNodePosition(TargetNode);
+
+    UE_LOG(LogTemp, Warning, TEXT("=== Camera Focus Debug ==="));
+    UE_LOG(LogTemp, Warning, TEXT("Target Node: Depth %d, Row %d"), TargetNode->Position.Depth, TargetNode->Position.Row);
+    UE_LOG(LogTemp, Warning, TEXT("Target Position: (%.1f, %.1f)"), TargetPosition.X, TargetPosition.Y);
+
+    if (TargetPosition == FVector2D::ZeroVector)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Target position is zero - Node might not be in NodeUIElements"));
+        return;
+    }
+
+    // 캔버스 크기 가져오기
+    FVector2D CanvasSize = MapCanvas->GetCachedGeometry().GetLocalSize();
+    UE_LOG(LogTemp, Warning, TEXT("Canvas Size: (%.1f, %.1f)"), CanvasSize.X, CanvasSize.Y);
+
+    // 캔버스 크기가 0이면 아직 렌더링 안된 상태
+    if (CanvasSize.X < 1.0f || CanvasSize.Y < 1.0f)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Canvas not ready yet, trying again next frame"));
+
+        // 다음 프레임에 다시 시도
+        FTimerHandle TimerHandle;
+        GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, TargetNode]()
+        {
+            FocusCameraOnNode(TargetNode);
+        }, 0.1f, false);
+        return;
+    }
+
+    // CameraFocusPosition을 사용하여 화면상 위치 계산
+    FVector2D FocusPoint = CanvasSize * CameraFocusPosition;
+    UE_LOG(LogTemp, Warning, TEXT("Focus Point: (%.1f, %.1f) - CameraFocusPosition: (%.2f, %.2f)"),
+        FocusPoint.X, FocusPoint.Y, CameraFocusPosition.X, CameraFocusPosition.Y);
+
+    // 타겟 노드가 FocusPoint에 오도록 캔버스 오프셋 계산
+    FVector2D NewOffset = FocusPoint - TargetPosition;
+    UE_LOG(LogTemp, Warning, TEXT("Calculated Offset (before zoom): (%.1f, %.1f)"), NewOffset.X, NewOffset.Y);
+
+    // 줌 레벨 적용
+    NewOffset *= CameraZoomLevel;
+    UE_LOG(LogTemp, Warning, TEXT("Final Offset (after zoom %.2f): (%.1f, %.1f)"), CameraZoomLevel, NewOffset.X, NewOffset.Y);
+
+    // 부드러운 카메라 이동 vs 즉시 이동
+    if (bEnableCameraSmoothing)
+    {
+        // 부드러운 이동 - 목표값 설정
+        TargetCameraOffset = NewOffset;
+        TargetCameraScale = CameraZoomLevel;
+        bIsCameraMoving = true;
+
+        UE_LOG(LogTemp, Warning, TEXT("Camera smooth movement started to node at Depth %d, Row %d"),
+            TargetNode->Position.Depth, TargetNode->Position.Row);
+    }
+    else
+    {
+        // 즉시 이동
+        CurrentCameraOffset = NewOffset;
+        CurrentCameraScale = CameraZoomLevel;
+        MapCanvas->SetRenderTranslation(NewOffset);
+        MapCanvas->SetRenderScale(FVector2D(CameraZoomLevel, CameraZoomLevel));
+
+        UE_LOG(LogTemp, Warning, TEXT("Camera instantly focused on node at Depth %d, Row %d"),
+            TargetNode->Position.Depth, TargetNode->Position.Row);
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Camera focused successfully on node at Depth %d, Row 0"),
+        TargetNode->Position.Depth, TargetNode->Position.Row);
+    UE_LOG(LogTemp, Warning, TEXT("======================"));
+}
+
+void UMapUIWidget::CenterCameraOnCurrentNode()
+{
+    if (CurrentPlayerNode)
+    {
+        FocusCameraOnNode(CurrentPlayerNode);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Cannot center camera - CurrentPlayerNode is null"));
+    }
 }
 

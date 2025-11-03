@@ -95,5 +95,16 @@ bool UMapNode::IsValidConnection(UMapNode* TargetNode) const
 		return false; // 연결된 노드의 깊이가 현재 노드보다 한 단계 아래여야 함
 	}
 
+	// 보스 노드로의 연결은 행 제약 완화 (모든 상점이 보스에 도달 가능)
+	if (TargetNode->NodeType == ENodeType::Boss)
+	{
+		return true;
+	}
+
+	// 시작 노드에서의 연결은 행 제약 완화 (모든 깊이1 노드에 도달 가능)
+	if (NodeType == ENodeType::Start)
+	{
+		return true;
+	}
 	return true; // 기본적으로 연결 가능
 }

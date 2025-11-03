@@ -54,6 +54,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	STAGE CurrentStage = STAGE::STAGE_1;
 
+	//실행할 비헤이비어 트리
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	class UBehaviorTree* BehaviorTree;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -66,7 +70,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	//공격 함수 - C++과 블루프린트 모두에서 구현 가능
-	UFUNCTION(BlueprintNativeEvent, Category = Attack)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = Attack)
 	void Attack();
 	virtual void Attack_Implementation();
 

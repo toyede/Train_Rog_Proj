@@ -8,6 +8,7 @@
 #include "DrawDebugHelpers.h"
 #include <cstdlib>
 #include <ctime>
+#include "GameFramework/Character.h"
 #include "Components/AbilityComponent.h"
 #include "Components/HealthComponent.h"
 //#include "InteractInterface.h"
@@ -41,7 +42,7 @@ ATrainCharacter::ATrainCharacter()
     FollowCamera->bUsePawnControlRotation = false;
 
     // 기본 이동속도 저장
-    NormalWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+    NormalWalkSpeed = 300.0f;
 
     // 기본 카메라 오프셋
     DefaultCameraOffset = CameraBoom->TargetOffset;
@@ -54,6 +55,9 @@ ATrainCharacter::ATrainCharacter()
 
     GetCharacterMovement()->bOrientRotationToMovement = false;
     GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
+
+    bIsCrouching = false;
+    bIsCrouchMove = false;
 }
 
 // 게임 시작 시 초기화
@@ -90,6 +94,16 @@ void ATrainCharacter::BeginPlay()
 void ATrainCharacter::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
+    if (Controller)
+    {
+        const FRotator ControlRotation = Controller->GetControlRotation();
+        const float CurrentPitch = ControlRotation.GetNormalized().Pitch;
+        AimPitch = FMath::Clamp(CurrentPitch, -30.0f, 30.0f);
+    }
+    else
+    {
+        AimPitch = 0.0f;
+    }
 }
 
 // 입력 바인딩
@@ -116,6 +130,10 @@ void ATrainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
         EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ATrainCharacter::StartCrouch);
         EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ATrainCharacter::StopCrouch);
     }
+    if (CrouchAction)
+    {
+        EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ATrainCharacter::ToggleCrouch);
+    }
 
     // ▶ 줌
     if (Zoom)
@@ -140,11 +158,26 @@ void ATrainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
     }
 }
 
+
 // =================== 캐릭터 동작 =================== //
+void ATrainCharacter::ToggleCrouch()
+{
+    if (bIsCrouched)
+    {
+        StopCrouch(); 
+    }
+    else
+    {
+        StartCrouch();
+    }
+}
 
 // 이동 처리
 void ATrainCharacter::Move(const FInputActionValue& Value)
 {
+    if (bIsCrouchMove)
+        return; // 앉아있으면 이동 무시
+    
     FVector2D MovementVector = Value.Get<FVector2D>();
     if (Controller == nullptr || MovementVector.IsNearlyZero())
         return;
@@ -167,7 +200,13 @@ void ATrainCharacter::Move(const FInputActionValue& Value)
 }
 
 // 점프 시작
-void ATrainCharacter::StartJump() { Jump(); }
+void ATrainCharacter::StartJump()
+{
+    if (bIsCrouchMove)
+        return; // 앉아있으면 이동 무시
+    
+    Jump();
+}
 
 // 점프 종료
 void ATrainCharacter::StopJump() { StopJumping(); }
@@ -176,29 +215,43 @@ void ATrainCharacter::StopJump() { StopJumping(); }
 void ATrainCharacter::StartCrouch()
 {
     Crouch();
-    GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed * 0.5f;
-    CameraBoom->TargetOffset = CrouchCameraOffset;
+    bIsCrouching = true;
+    bIsCrouchMove = true;
+    GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed * 0.f;
+    //CameraBoom->TargetOffset = CrouchCameraOffset;
 }
 
 // 앉기 해제
 void ATrainCharacter::StopCrouch()
 {
     UnCrouch();
-    GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
-    CameraBoom->TargetOffset = DefaultCameraOffset;
+    bIsCrouching = false;
+    GetWorldTimerManager().SetTimer(TimerHandle_StopCrouch, this, &ATrainCharacter::SetNormalWalkSpeed, 1.1f, false);
 }
 
 // 줌 인/아웃
 void ATrainCharacter::ZoomIn()
 {
+    if (bIsZooming || !GetMesh()) return;
+
     CameraBaseLength = CameraBoom->TargetArmLength;
-    CameraBoom->TargetArmLength = -100.f;
+    DefaultBoomRelativeLocation = CameraBoom->GetRelativeLocation();
+    
+    FVector SocketRelativeLocation = GetMesh()->GetSocketTransform(ZoomSocketName, ERelativeTransformSpace::RTS_Component).GetLocation();
+    
+    CameraBoom->SetRelativeLocation(SocketRelativeLocation);
+    CameraBoom->TargetArmLength = 0.f;
+    
     bIsZooming = true;
 }
 
 void ATrainCharacter::ZoomOut()
 {
+    if (!bIsZooming) return;
+    
+    CameraBoom->SetRelativeLocation(DefaultBoomRelativeLocation);
     CameraBoom->TargetArmLength = CameraBaseLength;
+    
     bIsZooming = false;
 }
 
@@ -279,6 +332,12 @@ void ATrainCharacter::RemapKey(UInputAction* InputAction, FKey OldKey, FKey NewK
             Subsystem->AddMappingContext(DefaultMappingContext, 0);
         }
     }
+}
+
+void ATrainCharacter::SetNormalWalkSpeed()
+{
+    GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
+    bIsCrouchMove = false;
 }
 
 void ATrainCharacter::LevelUp()

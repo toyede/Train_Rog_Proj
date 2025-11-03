@@ -28,6 +28,8 @@ AEnemy::AEnemy()
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = true;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
+
+	HealthComponent->OnDeath.AddDynamic(this, &AEnemy::Death_Implementation);
 }
 
 // Called when the game starts or when spawned
@@ -42,7 +44,7 @@ void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	DebugDisplay(DeltaTime);
+	//DebugDisplay(DeltaTime);
 }
 
 // Called to bind functionality to input
