@@ -22,10 +22,10 @@ struct FMapGenerationSettings
 	int32 MaxShopNodes;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Special Nodes", meta = (ClampMin = "0"))
-	int32 MinRepairNodes;
+	int32 MinSpecialNodes;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Special Nodes", meta = (ClampMin = "0"))
-	int32 MaxRepairNodes;
+	int32 MaxSpecialNodes;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Connections", meta = (ClampMin = "1", ClampMax = "3"))
 	int32 MinConnectionsPerNode;
@@ -39,23 +39,18 @@ struct FMapGenerationSettings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Generation")
 	int32 RandomSeed;
 
-	// 스테이지 개수 설정
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stages", meta = (ClampMin = "1", ClampMax = "10"))
-	int32 NumberOfStages;
-
 	FMapGenerationSettings()
 	{
 		MaxNodesPerDepth = 6;
 
 		MinShopNodes = 1;
 		MaxShopNodes = 2;
-		MinRepairNodes = 1;  // Special -> Repair
-		MaxRepairNodes = 2;  // Special -> Repair
+		MinSpecialNodes = 1;
+		MaxSpecialNodes = 2;
 		MinConnectionsPerNode = 1;
 		MaxConnectionsPerNode = 3;
 
 		RandomSeed = -1; // -1이면 자동 시드
-		NumberOfStages = 3; // 기본 3스테이지
 	}
 };
 
@@ -113,24 +108,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Map Generation")
 	TArray<UMapNode*> GetAllNodes() const;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Player")
-	UMapNode* CurrentPlayerNode;
-
-	UFUNCTION(BlueprintCallable, Category = "Map Generation")
-	UMapNode* GetCurrentPlayerNode() const { return CurrentPlayerNode; }
-
-	// 스테이지별 노드 조회
-	UFUNCTION(BlueprintCallable, Category = "Map Generation")
-	UMapNode* GetStartNodeForStage(int32 StageNumber) const;
-
-	UFUNCTION(BlueprintCallable, Category = "Map Generation")
-	UMapNode* GetBossNodeForStage(int32 StageNumber) const;
 
 protected:
-	// 단일 스테이지 생성
-	void GenerateSingleStage(int32 StageNumber);
-	// 스테이지 간 연결
-	void ConnectStageTransitions();
+	UPROPERTY(BlueprintReadOnly, Category = "Player")
+	UMapNode* CurrentPlayerNode;
 
 	void CreateNodesAtDepth(int32 Depth, int32 NodeCount);
 	void AssignSpecialNodeTypes();
