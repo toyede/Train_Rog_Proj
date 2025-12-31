@@ -44,5 +44,6 @@ void AMoth::BeginPlay()
 		AbilityComponent->Defense = 2.8;
 		break;
 	}
+	HealthComponent->CurrentHP = HealthComponent->MaxHP;
 	
 }
