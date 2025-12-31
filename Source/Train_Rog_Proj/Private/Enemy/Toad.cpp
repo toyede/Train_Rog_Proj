@@ -49,5 +49,4 @@ void AToad::BeginPlay()
 			AbilityComponent->Defense = 0.7;
 			break;
 	}
-	HealthComponent->CurrentHP = HealthComponent->MaxHP;
 }

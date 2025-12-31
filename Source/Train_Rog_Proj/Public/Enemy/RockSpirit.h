@@ -15,6 +15,4 @@ class TRAIN_ROG_PROJ_API ARockSpirit : public AEnemy
 	GENERATED_BODY()
 
 	void BeginPlay() override;
-	
-	virtual void Tick(float DeltaSeconds) override;
 };
