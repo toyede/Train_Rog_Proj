@@ -46,8 +46,6 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Dialogue")
     void AdvanceDialogue(FName NextID);
 
-    FDialogueRow* GetCurrentDialogueRow() const { return CurrentDialogueRow; }
-
 protected:
     // 현재 대화 데이터
     FDialogueRow* CurrentDialogueRow;

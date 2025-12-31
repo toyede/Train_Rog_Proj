@@ -44,4 +44,17 @@ void ARockSpirit::BeginPlay()
 		AbilityComponent->Defense = 0.7;
 		break;
 	}
+	
+	HealthComponent->CurrentHP = HealthComponent->MaxHP;
+}
+
+void ARockSpirit::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	
+	if (!GEngine){
+		FString Name = GetName();
+		FString Value = "["+Name+"] | "+FString::FromInt(HealthComponent->CurrentHP)+" / "+FString::FromInt(HealthComponent->MaxHP);
+		GEngine->AddOnScreenDebugMessage(0, DeltaSeconds, FColor::Emerald, Value);
+	}
 }
