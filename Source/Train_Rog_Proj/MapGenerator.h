@@ -144,6 +144,13 @@ protected:
 
 	void UpdateNodeAccessibility();
 
+	// 위험도 배정 관련 함수
+	void AssignDangerLevels(int32 StageNumber);
+	void AssignDangerLevelForDepth(int32 ActualDepth, int32 LocalDepth, TArray<UMapNode*>& NodesAtDepth);
+	int32 CalculateBaseDifficultyWeight(int32 LocalDepth) const;
+	int32 GetDangerLevelBonus(EDangerLevel DangerLevel) const;
+	float CalculateMonsterStatMultiplier(int32 LocalDepth, EDangerLevel DangerLevel) const;
+
 	TArray<UMapNode*> GetNormalNodes() const;
 	void ShuffleArray(TArray<UMapNode*>& Array) const;
 	//bool CanNodeReachDepth(UMapNode* StartNode, int32 TargetDepth) const;

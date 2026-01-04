@@ -17,6 +17,16 @@ enum class ENodeType : uint8
 	Boss UMETA(DisplayName = "Boss Node")
 };
 
+// 위험도 레벨 열거형
+UENUM(BlueprintType)
+enum class EDangerLevel : uint8
+{
+	Level1 UMETA(DisplayName = "Level 1"),
+	Level2 UMETA(DisplayName = "Level 2"),
+	Level3 UMETA(DisplayName = "Level 3"),
+	Elite UMETA(DisplayName = "Elite")
+};
+
 USTRUCT(BlueprintType)
 struct FNodePosition
 {
@@ -73,6 +83,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Node Info")
 	bool bIsAccessible;
 
+	// 난이도 관련 정보
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Difficulty")
+	EDangerLevel DangerLevel;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Difficulty")
+	int32 DifficultyWeight;  // 난이도 가중치
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Difficulty")
+	float MonsterStatMultiplier;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Difficulty")
+	bool bIsEliteLevel;
+
 	// 연결된 노드들
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Connections")
 	TArray<UMapNode*> ConnectedNodes;
@@ -98,6 +121,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Node Functions")
 	bool IsAtDepth(int32 TargetDepth) const;
+
+	// 난이도 관련 함수
+	UFUNCTION(BlueprintCallable, Category = "Difficulty")
+	FString GetDangerLevelString() const;
+
 
 private:
 	//노드 연결 가능 여부 검사
