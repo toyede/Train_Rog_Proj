@@ -30,6 +30,23 @@ public:
     UPROPERTY(BlueprintReadOnly, Category = "Map")
     UMapNode* CurrentPlayerNode;
 
+    // ========== 현재 전투 정보 ==========
+    // 현재 선택된 노드의 전투 난이도 정보
+    UPROPERTY(BlueprintReadWrite, Category = "Current Battle")
+    int32 CurrentDangerLevel;  // 1, 2, 3, 4 (4가 정예)
+
+    UPROPERTY(BlueprintReadWrite, Category = "Current Battle")
+    int32 CurrentDifficultyWeight;  // 최종 가중치 값
+
+    UPROPERTY(BlueprintReadWrite, Category = "Current Battle")
+    float CurrentMonsterStatBonus;  // 1.0, 1.2, 1.3 (배율)
+
+    UPROPERTY(BlueprintReadWrite, Category = "Current Battle")
+    bool bIsEliteBattle;  // 정예 전투 여부
+
+    UPROPERTY(BlueprintReadWrite, Category = "Current Battle")
+    ENodeType CurrentStationType;  // Normal, Shop, Repair (전투 후 정거장 타입)
+
     // 맵 생성 여부 확인
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Map")
     bool IsMapGenerated() const;
@@ -53,6 +70,14 @@ public:
     // 현재 플레이어 노드 반환 (cpp로 구현)
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Map")
     UMapNode* GetCurrentPlayerNode() const;
+
+    // 노드 클릭 시 전투 정보 저장 (Blueprint에서 호출)
+    UFUNCTION(BlueprintCallable, Category = "Current Battle")
+    void SetCurrentBattleInfo(UMapNode* SelectedNode);
+
+    // 전투 종료 후 전투 정보 초기화 (Blueprint에서 호출)
+    UFUNCTION(BlueprintCallable, Category = "Current Battle")
+    void ClearCurrentBattleInfo();
 
 protected:
 	virtual void Init() override;

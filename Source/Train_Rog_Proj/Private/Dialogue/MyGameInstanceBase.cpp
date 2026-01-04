@@ -13,6 +13,13 @@ UMyGameInstanceBase::UMyGameInstanceBase()
     MapGenerator = nullptr;
     CurrentPlayerNode = nullptr;
     bIsMapGenerated = false;
+
+    // 전투 정보 초기화
+    CurrentDangerLevel = 1;
+    CurrentDifficultyWeight = 0;
+    CurrentMonsterStatBonus = 1.0f;
+    bIsEliteBattle = false;
+    CurrentStationType = ENodeType::Normal;
 }
 
 void UMyGameInstanceBase::Init()
@@ -123,3 +130,39 @@ UMapNode* UMyGameInstanceBase::GetCurrentPlayerNode() const
 {
     return CurrentPlayerNode;
 }
+
+void UMyGameInstanceBase::SetCurrentBattleInfo(UMapNode* SelectedNode)
+{
+    if (!SelectedNode)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Cannot set battle info - SelectedNode is null"));
+        return;
+    }
+
+    // EDangerLevel을 int32로 변환 (1~4)
+    CurrentDangerLevel = static_cast<int32>(SelectedNode->DangerLevel) + 1;
+    CurrentDifficultyWeight = SelectedNode->DifficultyWeight;
+    CurrentMonsterStatBonus = SelectedNode->MonsterStatMultiplier;
+    bIsEliteBattle = SelectedNode->bIsEliteLevel;
+    CurrentStationType = SelectedNode->NodeType;
+
+    UE_LOG(LogTemp, Log, TEXT("=== Battle Info Set ==="));
+    UE_LOG(LogTemp, Log, TEXT("Danger Level: %d"), CurrentDangerLevel);
+    UE_LOG(LogTemp, Log, TEXT("Difficulty Weight: %d"), CurrentDifficultyWeight);
+    UE_LOG(LogTemp, Log, TEXT("Monster Stat Bonus: %.2f"), CurrentMonsterStatBonus);
+    UE_LOG(LogTemp, Log, TEXT("Is Elite: %s"), bIsEliteBattle ? TEXT("YES") : TEXT("NO"));
+    UE_LOG(LogTemp, Log, TEXT("Station Type: %s"), *UEnum::GetValueAsString(CurrentStationType));
+    UE_LOG(LogTemp, Log, TEXT("======================="));
+}
+
+void UMyGameInstanceBase::ClearCurrentBattleInfo()
+{
+    CurrentDangerLevel = 1;
+    CurrentDifficultyWeight = 0;
+    CurrentMonsterStatBonus = 1.0f;
+    bIsEliteBattle = false;
+    CurrentStationType = ENodeType::Normal;
+
+    UE_LOG(LogTemp, Log, TEXT("Battle info cleared"));
+}
+

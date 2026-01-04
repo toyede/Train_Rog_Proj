@@ -11,6 +11,12 @@ UMapNode::UMapNode()
 	bIsAccessible = false;
 	ConnectedNodes.Empty();
 	PreviousNodes.Empty();
+
+	// 난이도 관련 초기화
+	DangerLevel = EDangerLevel::Level1;
+	DifficultyWeight = 0;
+	MonsterStatMultiplier = 1.0f;
+	bIsEliteLevel = false;
 }
 
 void UMapNode::AddConnection(UMapNode* TargetNode)
@@ -82,6 +88,23 @@ FString UMapNode::GetNodeTypeString() const
 bool UMapNode::IsAtDepth(int32 TargetDepth) const
 {
 	return Position.Depth == TargetDepth;
+}
+
+FString UMapNode::GetDangerLevelString() const
+{
+	switch (DangerLevel)
+	{
+	case EDangerLevel::Level1:
+		return TEXT("Level 1");
+	case EDangerLevel::Level2:
+		return TEXT("Level 2");
+	case EDangerLevel::Level3:
+		return TEXT("Level 3");
+	case EDangerLevel::Elite:
+		return TEXT("Elite");
+	default:
+		return TEXT("Unknown");
+	}
 }
 
 bool UMapNode::IsValidConnection(UMapNode* TargetNode) const
