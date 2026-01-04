@@ -31,7 +31,7 @@ public:
 	AEnemy();
 
 	//추격해 때릴 타겟 클래스
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "0_Settings")
 	TSubclassOf<AActor> TargetClass;
 
 	//월드에서 찾은 타겟 클래스의 참조
@@ -51,11 +51,11 @@ public:
 	class UWidgetComponent* HPBar;
 
 	//능력치 설정 스테이지 변수
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "0_Settings")
 	STAGE CurrentStage = STAGE::STAGE_1;
 
 	//실행할 비헤이비어 트리
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "0_Settings")
 	class UBehaviorTree* BehaviorTree;
 
 protected:
