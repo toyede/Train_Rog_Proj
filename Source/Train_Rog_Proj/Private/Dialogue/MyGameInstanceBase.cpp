@@ -131,6 +131,41 @@ UMapNode* UMyGameInstanceBase::GetCurrentPlayerNode() const
     return CurrentPlayerNode;
 }
 
+bool UMyGameInstanceBase::CanMoveToNode(UMapNode* TargetNode) const
+{
+    // 타겟 노드가 null인 경우
+    if (!TargetNode)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("CanMoveToNode: TargetNode is null"));
+        return false;
+    }
+
+    // 현재 플레이어 노드가 없는 경우
+    if (!CurrentPlayerNode)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("CanMoveToNode: CurrentPlayerNode is null"));
+        return false;
+    }
+
+    // 현재 노드에서 타겟 노드로 연결되어 있는지 확인
+    bool bIsConnected = CurrentPlayerNode->ConnectedNodes.Contains(TargetNode);
+
+    if (bIsConnected)
+    {
+        UE_LOG(LogTemp, Log, TEXT("CanMoveToNode: Move allowed from (Depth %d, Row %d) to (Depth %d, Row %d)"),
+            CurrentPlayerNode->Position.Depth, CurrentPlayerNode->Position.Row,
+            TargetNode->Position.Depth, TargetNode->Position.Row);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("CanMoveToNode: Move NOT allowed from (Depth %d, Row %d) to (Depth %d, Row %d) - Not connected!"),
+            CurrentPlayerNode->Position.Depth, CurrentPlayerNode->Position.Row,
+            TargetNode->Position.Depth, TargetNode->Position.Row);
+    }
+
+    return bIsConnected;
+}
+
 void UMyGameInstanceBase::SetCurrentBattleInfo(UMapNode* SelectedNode)
 {
     if (!SelectedNode)

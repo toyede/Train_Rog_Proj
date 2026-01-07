@@ -71,6 +71,10 @@ public:
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Map")
     UMapNode* GetCurrentPlayerNode() const;
 
+    // 현재 플레이어 노드에서 타겟 노드로 이동 가능한지 확인
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Map")
+    bool CanMoveToNode(UMapNode* TargetNode) const;
+
     // 노드 클릭 시 전투 정보 저장 (Blueprint에서 호출)
     UFUNCTION(BlueprintCallable, Category = "Current Battle")
     void SetCurrentBattleInfo(UMapNode* SelectedNode);
