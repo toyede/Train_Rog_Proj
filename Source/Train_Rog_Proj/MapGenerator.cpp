@@ -281,6 +281,10 @@ void UMapGenerator::GenerateSingleStage(int32 StageNumber)
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("  Stage %d internal connections: %d"), StageNumber, TotalConnections);
+
+	// 위험도 배정 추가
+	AssignDangerLevels(StageNumber);
+	UE_LOG(LogTemp, Log, TEXT("  Stage %d danger levels assigned"), StageNumber);
 }
 
 void UMapGenerator::ConnectStageTransitions()
@@ -818,6 +822,8 @@ void UMapGenerator::UpdateNodeAccessibility()
 	}
 }
 
+
+
 UMapNode* UMapGenerator::GetStartNode() const
 {
 	return GetStartNodeForStage(1);
@@ -1020,3 +1026,303 @@ void UMapGenerator::DFS_CheckReachability(UMapNode* CurrentNode, int32 TargetDep
 }
 
 */
+
+
+void UMapGenerator::AssignDangerLevels(int32 StageNumber)
+{
+	int32 DepthOffset = (StageNumber - 1) * 7;
+
+	UE_LOG(LogTemp, Log, TEXT("  === Assigning Danger Levels for Stage %d ==="), StageNumber);
+
+	// 각 로컬 깊이별로 위험도 배정
+	for (int32 LocalDepth = 0; LocalDepth <= 6; LocalDepth++)
+	{
+		int32 ActualDepth = LocalDepth + DepthOffset;
+		TArray<UMapNode*> NodesAtDepth = GetNodesAtDepth(ActualDepth);
+
+		if (NodesAtDepth.Num() == 0)
+		{
+			continue;
+		}
+
+		// 보스 노드는 위험도 배정하지 않음
+		if (LocalDepth == 6)
+		{
+			UE_LOG(LogTemp, Log, TEXT("    LocalDepth %d (Boss): Skipping danger level assignment"), LocalDepth);
+			continue;
+		}
+
+		AssignDangerLevelForDepth(ActualDepth, LocalDepth, NodesAtDepth);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("  === Stage %d Danger Level Assignment Complete ==="), StageNumber);
+}
+
+void UMapGenerator::AssignDangerLevelForDepth(int32 ActualDepth, int32 LocalDepth, TArray<UMapNode*>& NodesAtDepth)
+{
+	int32 NodeCount = NodesAtDepth.Num();
+
+	UE_LOG(LogTemp, Log, TEXT("    Assigning danger levels for LocalDepth %d (ActualDepth %d) - %d nodes"),
+		LocalDepth, ActualDepth, NodeCount);
+
+	// 깊이 0, 1: 모두 레벨 1
+	if (LocalDepth == 0 || LocalDepth == 1)
+	{
+		for (UMapNode* Node : NodesAtDepth)
+		{
+			Node->DangerLevel = EDangerLevel::Level1;
+			Node->bIsEliteLevel = false;
+			int32 BaseWeight = CalculateBaseDifficultyWeight(LocalDepth);
+			Node->DifficultyWeight = BaseWeight;
+			Node->MonsterStatMultiplier = CalculateMonsterStatMultiplier(LocalDepth, EDangerLevel::Level1);
+
+			UE_LOG(LogTemp, Log, TEXT("      Node (%d,%d): Level1, Weight=%d, StatMult=%.2f"),
+				Node->Position.Depth, Node->Position.Row, Node->DifficultyWeight, Node->MonsterStatMultiplier);
+		}
+		return;
+	}
+
+	// 노드 셔플
+	ShuffleArray(NodesAtDepth);
+
+	int32 AssignedIndex = 0;
+
+	// 깊이 2: 레벨2 최소 1개
+	if (LocalDepth == 2)
+	{
+		// 레벨2 배정 (최소 1개)
+		int32 Level2Count = FMath::Max(1, NodeCount > 1 ? 1 : NodeCount);
+
+		for (int32 i = 0; i < Level2Count && AssignedIndex < NodeCount; i++)
+		{
+			UMapNode* Node = NodesAtDepth[AssignedIndex++];
+			Node->DangerLevel = EDangerLevel::Level2;
+			Node->bIsEliteLevel = false;
+			int32 BaseWeight = CalculateBaseDifficultyWeight(LocalDepth);
+			Node->DifficultyWeight = BaseWeight + GetDangerLevelBonus(EDangerLevel::Level2);
+			Node->MonsterStatMultiplier = CalculateMonsterStatMultiplier(LocalDepth, EDangerLevel::Level2);
+
+			UE_LOG(LogTemp, Log, TEXT("      Node (%d,%d): Level2, Weight=%d, StatMult=%.2f"),
+				Node->Position.Depth, Node->Position.Row, Node->DifficultyWeight, Node->MonsterStatMultiplier);
+		}
+	}
+
+	// 깊이 3: 레벨3 최소 1개 + 레벨2 최소 1개
+	if (LocalDepth == 3)
+	{
+		// 레벨3 배정 (최소 1개)
+		int32 Level3Count = FMath::Max(1, NodeCount > 2 ? 1 : 0);
+		for (int32 i = 0; i < Level3Count && AssignedIndex < NodeCount; i++)
+		{
+			UMapNode* Node = NodesAtDepth[AssignedIndex++];
+			Node->DangerLevel = EDangerLevel::Level3;
+			Node->bIsEliteLevel = false;
+			int32 BaseWeight = CalculateBaseDifficultyWeight(LocalDepth);
+			Node->DifficultyWeight = BaseWeight + GetDangerLevelBonus(EDangerLevel::Level3);
+			Node->MonsterStatMultiplier = CalculateMonsterStatMultiplier(LocalDepth, EDangerLevel::Level3);
+
+			UE_LOG(LogTemp, Log, TEXT("      Node (%d,%d): Level3, Weight=%d, StatMult=%.2f"),
+				Node->Position.Depth, Node->Position.Row, Node->DifficultyWeight, Node->MonsterStatMultiplier);
+		}
+
+		// 레벨2 배정 (최소 1개)
+		int32 Level2Count = FMath::Max(1, NodeCount > 1 ? 1 : 0);
+		for (int32 i = 0; i < Level2Count && AssignedIndex < NodeCount; i++)
+		{
+			UMapNode* Node = NodesAtDepth[AssignedIndex++];
+			Node->DangerLevel = EDangerLevel::Level2;
+			Node->bIsEliteLevel = false;
+			int32 BaseWeight = CalculateBaseDifficultyWeight(LocalDepth);
+			Node->DifficultyWeight = BaseWeight + GetDangerLevelBonus(EDangerLevel::Level2);
+			Node->MonsterStatMultiplier = CalculateMonsterStatMultiplier(LocalDepth, EDangerLevel::Level2);
+
+			UE_LOG(LogTemp, Log, TEXT("      Node (%d,%d): Level2, Weight=%d, StatMult=%.2f"),
+				Node->Position.Depth, Node->Position.Row, Node->DifficultyWeight, Node->MonsterStatMultiplier);
+		}
+	}
+
+	// 깊이 4: 정예 0~1개 (50%) + 레벨3 최소 1개 + 레벨2 최소 1개
+	if (LocalDepth == 4)
+	{
+		// 정예 배정 (50% 확률로 1개)
+		bool bSpawnElite = RandomStream.FRand() < 0.5f;
+		if (bSpawnElite && AssignedIndex < NodeCount)
+		{
+			UMapNode* Node = NodesAtDepth[AssignedIndex++];
+			Node->DangerLevel = EDangerLevel::Elite;
+			Node->bIsEliteLevel = true;
+			int32 BaseWeight = CalculateBaseDifficultyWeight(LocalDepth);
+			Node->DifficultyWeight = BaseWeight + GetDangerLevelBonus(EDangerLevel::Elite);
+			Node->MonsterStatMultiplier = CalculateMonsterStatMultiplier(LocalDepth, EDangerLevel::Elite);
+
+			UE_LOG(LogTemp, Log, TEXT("      Node (%d,%d): ELITE, Weight=%d, StatMult=%.2f"),
+				Node->Position.Depth, Node->Position.Row, Node->DifficultyWeight, Node->MonsterStatMultiplier);
+		}
+
+		// 레벨3 배정 (최소 1개)
+		int32 Level3Count = FMath::Max(1, NodeCount > 2 ? 1 : 0);
+		for (int32 i = 0; i < Level3Count && AssignedIndex < NodeCount; i++)
+		{
+			UMapNode* Node = NodesAtDepth[AssignedIndex++];
+			Node->DangerLevel = EDangerLevel::Level3;
+			Node->bIsEliteLevel = false;
+			int32 BaseWeight = CalculateBaseDifficultyWeight(LocalDepth);
+			Node->DifficultyWeight = BaseWeight + GetDangerLevelBonus(EDangerLevel::Level3);
+			Node->MonsterStatMultiplier = CalculateMonsterStatMultiplier(LocalDepth, EDangerLevel::Level3);
+
+			UE_LOG(LogTemp, Log, TEXT("      Node (%d,%d): Level3, Weight=%d, StatMult=%.2f"),
+				Node->Position.Depth, Node->Position.Row, Node->DifficultyWeight, Node->MonsterStatMultiplier);
+		}
+
+		// 레벨2 배정 (최소 1개)
+		int32 Level2Count = FMath::Max(1, NodeCount > 1 ? 1 : 0);
+		for (int32 i = 0; i < Level2Count && AssignedIndex < NodeCount; i++)
+		{
+			UMapNode* Node = NodesAtDepth[AssignedIndex++];
+			Node->DangerLevel = EDangerLevel::Level2;
+			Node->bIsEliteLevel = false;
+			int32 BaseWeight = CalculateBaseDifficultyWeight(LocalDepth);
+			Node->DifficultyWeight = BaseWeight + GetDangerLevelBonus(EDangerLevel::Level2);
+			Node->MonsterStatMultiplier = CalculateMonsterStatMultiplier(LocalDepth, EDangerLevel::Level2);
+
+			UE_LOG(LogTemp, Log, TEXT("      Node (%d,%d): Level2, Weight=%d, StatMult=%.2f"),
+				Node->Position.Depth, Node->Position.Row, Node->DifficultyWeight, Node->MonsterStatMultiplier);
+		}
+	}
+
+	// 깊이 5: 정예 0~1개 (50%) + 레벨3 최소 1개 + 레벨2 최소 1개
+	if (LocalDepth == 5)
+	{
+		// 정예 배정 (50% 확률로 1개)
+		bool bSpawnElite = RandomStream.FRand() < 0.5f;
+		if (bSpawnElite && AssignedIndex < NodeCount)
+		{
+			UMapNode* Node = NodesAtDepth[AssignedIndex++];
+			Node->DangerLevel = EDangerLevel::Elite;
+			Node->bIsEliteLevel = true;
+			int32 BaseWeight = CalculateBaseDifficultyWeight(LocalDepth);
+			Node->DifficultyWeight = BaseWeight + GetDangerLevelBonus(EDangerLevel::Elite);
+			Node->MonsterStatMultiplier = CalculateMonsterStatMultiplier(LocalDepth, EDangerLevel::Elite);
+
+			UE_LOG(LogTemp, Log, TEXT("      Node (%d,%d): ELITE, Weight=%d, StatMult=%.2f"),
+				Node->Position.Depth, Node->Position.Row, Node->DifficultyWeight, Node->MonsterStatMultiplier);
+		}
+
+		// 레벨3 배정 (최소 1개)
+		int32 Level3Count = FMath::Max(1, NodeCount > 2 ? 1 : 0);
+		for (int32 i = 0; i < Level3Count && AssignedIndex < NodeCount; i++)
+		{
+			UMapNode* Node = NodesAtDepth[AssignedIndex++];
+			Node->DangerLevel = EDangerLevel::Level3;
+			Node->bIsEliteLevel = false;
+			int32 BaseWeight = CalculateBaseDifficultyWeight(LocalDepth);
+			Node->DifficultyWeight = BaseWeight + GetDangerLevelBonus(EDangerLevel::Level3);
+			Node->MonsterStatMultiplier = CalculateMonsterStatMultiplier(LocalDepth, EDangerLevel::Level3);
+
+			UE_LOG(LogTemp, Log, TEXT("      Node (%d,%d): Level3, Weight=%d, StatMult=%.2f"),
+				Node->Position.Depth, Node->Position.Row, Node->DifficultyWeight, Node->MonsterStatMultiplier);
+		}
+
+		// 레벨2 배정 (최소 1개)
+		int32 Level2Count = FMath::Max(1, NodeCount > 1 ? 1 : 0);
+		for (int32 i = 0; i < Level2Count && AssignedIndex < NodeCount; i++)
+		{
+			UMapNode* Node = NodesAtDepth[AssignedIndex++];
+			Node->DangerLevel = EDangerLevel::Level2;
+			Node->bIsEliteLevel = false;
+			int32 BaseWeight = CalculateBaseDifficultyWeight(LocalDepth);
+			Node->DifficultyWeight = BaseWeight + GetDangerLevelBonus(EDangerLevel::Level2);
+			Node->MonsterStatMultiplier = CalculateMonsterStatMultiplier(LocalDepth, EDangerLevel::Level2);
+
+			UE_LOG(LogTemp, Log, TEXT("      Node (%d,%d): Level2, Weight=%d, StatMult=%.2f"),
+				Node->Position.Depth, Node->Position.Row, Node->DifficultyWeight, Node->MonsterStatMultiplier);
+		}
+	}
+
+	// 나머지는 모두 레벨1로 배정
+	for (int32 i = AssignedIndex; i < NodeCount; i++)
+	{
+		UMapNode* Node = NodesAtDepth[i];
+		Node->DangerLevel = EDangerLevel::Level1;
+		Node->bIsEliteLevel = false;
+		int32 BaseWeight = CalculateBaseDifficultyWeight(LocalDepth);
+		Node->DifficultyWeight = BaseWeight;
+		Node->MonsterStatMultiplier = CalculateMonsterStatMultiplier(LocalDepth, EDangerLevel::Level1);
+
+		UE_LOG(LogTemp, Log, TEXT("      Node (%d,%d): Level1 (remaining), Weight=%d, StatMult=%.2f"),
+			Node->Position.Depth, Node->Position.Row, Node->DifficultyWeight, Node->MonsterStatMultiplier);
+	}
+}
+
+int32 UMapGenerator::CalculateBaseDifficultyWeight(int32 LocalDepth) const
+{
+	int32 MinWeight = 0;
+	int32 MaxWeight = 0;
+
+	switch (LocalDepth)
+	{
+	case 0:
+	case 1:
+		MinWeight = 7;
+		MaxWeight = 10;
+		break;
+	case 2:
+		MinWeight = 10;
+		MaxWeight = 12;
+		break;
+	case 3:
+		MinWeight = 12;
+		MaxWeight = 15;
+		break;
+	case 4:
+		MinWeight = 15;
+		MaxWeight = 20;
+		break;
+	case 5:
+		MinWeight = 25;
+		MaxWeight = 30;
+		break;
+	default:
+		MinWeight = 7;
+		MaxWeight = 10;
+		break;
+	}
+
+	return RandomStream.RandRange(MinWeight, MaxWeight);
+}
+
+int32 UMapGenerator::GetDangerLevelBonus(EDangerLevel DangerLevel) const
+{
+	switch (DangerLevel)
+	{
+	case EDangerLevel::Level1:
+		return 0;
+	case EDangerLevel::Level2:
+		return 5;
+	case EDangerLevel::Level3:
+		return 10;
+	case EDangerLevel::Elite:
+		return 15;
+	default:
+		return 0;
+	}
+}
+
+float UMapGenerator::CalculateMonsterStatMultiplier(int32 LocalDepth, EDangerLevel DangerLevel) const
+{
+	// 정예는 무조건 1.3 (30% 증가)
+	if (DangerLevel == EDangerLevel::Elite)
+	{
+		return 1.3f;
+	}
+
+	// 깊이 4, 5는 1.2 (20% 증가)
+	if (LocalDepth == 4 || LocalDepth == 5)
+	{
+		return 1.2f;
+	}
+
+	// 나머지는 1.0 (증가 없음)
+	return 1.0f;
+}
+
