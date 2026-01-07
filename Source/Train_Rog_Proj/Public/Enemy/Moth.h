@@ -16,4 +16,6 @@ class TRAIN_ROG_PROJ_API AMoth : public AEnemy
 
 	void BeginPlay() override;
 	
+	AMoth();
+	
 };

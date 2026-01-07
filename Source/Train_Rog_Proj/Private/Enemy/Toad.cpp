@@ -8,7 +8,7 @@
 
 AToad::AToad()
 {
-	
+	WeightValue = 4.0f;
 }
 
 void AToad::BeginPlay()

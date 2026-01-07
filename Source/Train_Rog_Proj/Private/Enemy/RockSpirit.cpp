@@ -58,3 +58,8 @@ void ARockSpirit::Tick(float DeltaSeconds)
 		GEngine->AddOnScreenDebugMessage(0, DeltaSeconds, FColor::Emerald, Value);
 	}
 }
+
+ARockSpirit::ARockSpirit()
+{
+	WeightValue = 3.0f;
+}

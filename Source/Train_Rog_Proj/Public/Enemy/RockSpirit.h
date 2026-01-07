@@ -17,4 +17,6 @@ class TRAIN_ROG_PROJ_API ARockSpirit : public AEnemy
 	void BeginPlay() override;
 	
 	virtual void Tick(float DeltaSeconds) override;
+	
+	ARockSpirit();
 };

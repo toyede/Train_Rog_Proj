@@ -47,3 +47,8 @@ void AMoth::BeginPlay()
 	HealthComponent->CurrentHP = HealthComponent->MaxHP;
 	
 }
+
+AMoth::AMoth()
+{
+	WeightValue = 0.666666f;
+}

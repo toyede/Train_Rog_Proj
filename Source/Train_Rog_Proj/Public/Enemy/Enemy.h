@@ -29,6 +29,10 @@ class TRAIN_ROG_PROJ_API AEnemy : public ACharacter
 public:
 	// Sets default values for this pawn's properties
 	AEnemy();
+	
+	//몬스터 가중치
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	float WeightValue = 0.0f;
 
 	//추격해 때릴 타겟 클래스
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "0_Settings")

@@ -8,7 +8,7 @@ public class Train_Rog_Proj : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "MediaAssets" ,"AIModule" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "MediaAssets" ,"AIModule" ,"NavigationSystem" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

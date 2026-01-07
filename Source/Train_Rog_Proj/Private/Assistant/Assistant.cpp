@@ -70,11 +70,11 @@ void AAssistant::SearchTarget()
 			ECC_Pawn
 		))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("SEARCH : Something Detected"));
+			//UE_LOG(LogTemp, Warning, TEXT("SEARCH : Something Detected"));
 			//포착된 물체가 적 클래스이면 Target에 넣고 트레이스 중단
 			if (Result.GetActor()->IsA(TargetClass))
 			{
-				UE_LOG(LogTemp, Warning, TEXT("SEARCH : Target Found"));
+				//UE_LOG(LogTemp, Warning, TEXT("SEARCH : Target Found"));
 				Target = Result.GetActor();
 				//탐색 트레이스 중단
 				GetWorld()->GetTimerManager().ClearTimer(SearchTimer);

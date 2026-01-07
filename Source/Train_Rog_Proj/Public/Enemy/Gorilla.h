@@ -14,4 +14,5 @@ class AGorilla : public AEnemy
 {
 	GENERATED_BODY()
 	
+	AGorilla();
 };
