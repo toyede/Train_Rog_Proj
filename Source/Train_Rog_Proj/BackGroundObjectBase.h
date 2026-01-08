@@ -105,6 +105,12 @@ protected:
     float RotationTime = 1.0f;    // 회전에 걸릴 총 시간(초)
     float ElapsedTime = 0.0f;
 
+    // 기차 회전 관련 추가 변수들
+    FVector LocalPivotPoint; // 회전의 중심점 (타일 로컬 좌표)
+    float RotationRadius = 0.0f; // 회전 반경
+    float RotationSign = 0.0f; // 회전 방향 (1이 우회전이고 -1이 좌회전임)
+
+
 public:	
 	virtual void Tick(float DeltaTime) override;
 

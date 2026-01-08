@@ -45,6 +45,33 @@ void ABackGroundObjectBase::BeginPlay()
     SpawnSmallBackGrounds();
 }
 
+// // 기차를 회전시키는 부분
+// void ABackGroundObjectBase::Tick(float DeltaTime)
+// {
+//     Super::Tick(DeltaTime);
+
+//     if (!bIsRotating || !ActorToRotate) 
+//     {
+//         return;
+//     }
+
+//     // 경과 시간 누적
+//     ElapsedTime += DeltaTime;
+//     float Alpha = FMath::Clamp(ElapsedTime / RotationTime, 0.0f, 1.0f);
+
+//     // 선형 보간으로 회전값 계산
+//     FRotator NewRot = FMath::Lerp(StartRotation, TargetRotation, Alpha);
+//     ActorToRotate->SetActorRotation(NewRot);
+
+//     // 완료 시 상태 정리
+//     if (Alpha >= 1.0f)
+//     {
+//         bIsRotating   = false;
+//         ActorToRotate = nullptr;
+//     }
+// }
+
+// 기차 회전시키는 부분 업데이트
 void ABackGroundObjectBase::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
@@ -54,18 +81,48 @@ void ABackGroundObjectBase::Tick(float DeltaTime)
         return;
     }
 
-    // 경과 시간 누적
+    // 경과 시간 및 진행률(Alpha) 계산
     ElapsedTime += DeltaTime;
     float Alpha = FMath::Clamp(ElapsedTime / RotationTime, 0.0f, 1.0f);
 
-    // 선형 보간으로 회전값 계산
+    // 1. 기차의 회전 (Rotation) 처리 - 기존과 동일하게 보간
     FRotator NewRot = FMath::Lerp(StartRotation, TargetRotation, Alpha);
     ActorToRotate->SetActorRotation(NewRot);
 
-    // 완료 시 상태 정리
+    // 2. 기차의 위치 (Location) 보정 - [핵심 로직]
+    // 배경 타일이 움직이면(Manager에 의해), 타일의 월드 변환행렬도 변합니다.
+    // 따라서 로컬 Pivot을 월드 좌표로 변환하면 "움직이는 Pivot"을 얻을 수 있습니다.
+    FVector WorldPivot = GetActorTransform().TransformPosition(LocalPivotPoint);
+
+    // 기차의 위치는 Pivot으로부터 "회전 반경"만큼 떨어진 곳이어야 합니다.
+    // 우회전 중이라면, 기차는 Pivot의 "왼쪽"에 있어야 합니다.
+    // 좌회전 중이라면, 기차는 Pivot의 "오른쪽"에 있어야 합니다.
+    
+    // 현재 기차의 Right Vector 구하기
+    FVector CurrentRightVec = FRotationMatrix(NewRot).GetScaledAxis(EAxis::Y);
+
+    FVector NewLoc;
+    if (TileCategory == ETileCategory::TileRight)
+    {
+        // 우회전: Pivot은 기차의 오른쪽에 있음 -> 기차는 Pivot에서 -Right 방향으로 R만큼 이동
+        NewLoc = WorldPivot - (CurrentRightVec * RotationRadius);
+    }
+    else // TileLeft
+    {
+        // 좌회전: Pivot은 기차의 왼쪽에 있음 -> 기차는 Pivot에서 +Right 방향으로 R만큼 이동
+        NewLoc = WorldPivot + (CurrentRightVec * RotationRadius);
+    }
+
+    // 높이(Z) 유지 (필요 시)
+    NewLoc.Z = ActorToRotate->GetActorLocation().Z;
+
+    // 최종 위치 적용
+    ActorToRotate->SetActorLocation(NewLoc);
+
+    // 완료 처리
     if (Alpha >= 1.0f)
     {
-        bIsRotating   = false;
+        bIsRotating = false;
         ActorToRotate = nullptr;
     }
 }
@@ -99,6 +156,46 @@ void ABackGroundObjectBase::SetTrigerBox()
     }
 }
 
+// void ABackGroundObjectBase::OnChangeDirOverlap(
+//     UPrimitiveComponent* OverlappedComp,
+//     AActor* OtherActor,
+//     UPrimitiveComponent* OtherComp,
+//     int32 OtherBodyIndex,
+//     bool bFromSweep,
+//     const FHitResult& SweepResult)
+// {
+//     // 예: 기차 액터만 필터링
+//     if (OtherActor && OtherActor != this && OtherComp->ComponentHasTag(FName("TrainCollision")))
+//     {
+//         UE_LOG(LogTemp, Warning, TEXT("BaseCpp충돌알림"));
+//         // Delegate 를 통해 Manager 등 외부에 알린다
+        
+//         OnChangeDirection.Broadcast(this);
+
+//         // 이미 회전 중이면 무시
+//         if (bIsRotating)
+//         {
+//             return;
+//         }
+
+//         ActorToRotate = OtherActor;
+//         StartRotation = OtherActor->GetActorRotation();
+//         ElapsedTime     = .0f;
+
+//         if(TileCategory == ETileCategory::TileRight)
+//         {
+//             bIsRotating     = true;
+//             TargetRotation  = StartRotation + FRotator(0, 90, 0);  // Yaw +90도
+//         }
+
+//         else if(TileCategory == ETileCategory::TileLeft)
+//         {
+//             bIsRotating     = true;
+//             TargetRotation  = StartRotation + FRotator(0, -90, 0);  // Yaw +90도
+//         }
+//     }
+// }
+
 void ABackGroundObjectBase::OnChangeDirOverlap(
     UPrimitiveComponent* OverlappedComp,
     AActor* OtherActor,
@@ -107,34 +204,51 @@ void ABackGroundObjectBase::OnChangeDirOverlap(
     bool bFromSweep,
     const FHitResult& SweepResult)
 {
-    // 예: 기차 액터만 필터링
+    // 기차 액터 필터링
     if (OtherActor && OtherActor != this && OtherComp->ComponentHasTag(FName("TrainCollision")))
     {
-        UE_LOG(LogTemp, Warning, TEXT("BaseCpp충돌알림"));
-        // Delegate 를 통해 Manager 등 외부에 알린다
-        
-        OnChangeDirection.Broadcast(this);
+        // 중복 트리거 방지
+        if (bIsRotating) return;
 
-        // 이미 회전 중이면 무시
-        if (bIsRotating)
-        {
-            return;
-        }
+        OnChangeDirection.Broadcast(this);
 
         ActorToRotate = OtherActor;
         StartRotation = OtherActor->GetActorRotation();
-        ElapsedTime     = .0f;
+        ElapsedTime = 0.0f;
+        bIsRotating = true;
 
-        if(TileCategory == ETileCategory::TileRight)
+        // --- [수정된 부분] Pivot 및 궤적 계산 ---
+
+        // 회전 반경은 타일 크기의 절반 (가로/세로 동일하다고 가정)
+        // BoxExtent는 절반 크기이므로 MeasuredYLength / 2 와 같습니다.
+        RotationRadius = BoxExtent.Y; 
+
+        // 타일 로컬 좌표 기준 Pivot 설정
+        // 우회전(Right) 선로: 진입점 기준 오른쪽 구석이 중심
+        // 좌회전(Left) 선로: 진입점 기준 왼쪽 구석이 중심
+        // (기차가 +X 방향을 보고 진입한다고 가정할 때의 로컬 좌표 계산)
+        
+        if (TileCategory == ETileCategory::TileRight)
         {
-            bIsRotating     = true;
-            TargetRotation  = StartRotation + FRotator(0, 90, 0);  // Yaw +90도
+            // 우회전: 90도 회전
+            TargetRotation = StartRotation + FRotator(0, 90.0f, 0);
+            RotationSign = 1.0f; 
+            
+            // 로컬 Pivot: 기차 진행방향(Forward) 기준 오른쪽(Right) 구석
+            // 타일 중심(0,0)에서 (ExtentX, ExtentY) 위치라고 가정
+            // 정확한 위치는 타일의 Pivot Point 설정에 따라 다를 수 있으나, 
+            // 보통 타일 끝 모서리가 원의 중심입니다.
+            // [수정] BoxExtent.X -> -BoxExtent.X (입구 쪽 모서리)
+            LocalPivotPoint = FVector(-BoxExtent.X, BoxExtent.Y, 0.0f);
         }
-
-        else if(TileCategory == ETileCategory::TileLeft)
+        else if (TileCategory == ETileCategory::TileLeft)
         {
-            bIsRotating     = true;
-            TargetRotation  = StartRotation + FRotator(0, -90, 0);  // Yaw +90도
+            // 좌회전: -90도 회전
+            TargetRotation = StartRotation + FRotator(0, -90.0f, 0);
+            RotationSign = -1.0f;
+
+            // [수정] BoxExtent.X -> -BoxExtent.X (입구 쪽 모서리)
+            LocalPivotPoint = FVector(-BoxExtent.X, -BoxExtent.Y, 0.0f);
         }
     }
 }
