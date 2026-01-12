@@ -25,6 +25,9 @@ UMapUIWidget::UMapUIWidget(const FObjectInitializer& ObjectInitializer) : Super(
     MapSize = FVector2D(6200.0f, 800.0f);
     MaxRowsPerDepth = 6;
 
+    // 노드 버튼 기본 크기 설정
+    NodeButtonSize = FVector2D(120.0f, 100.0f);
+
     // 기찻길 기본 설정
     RailSegmentLength = 40.0f;
     RailSegmentWidth = 16.0f;
@@ -405,7 +408,7 @@ UMapNodeButton* UMapUIWidget::CreateNodeButton(UMapNode* Node, const FVector2D& 
     {
         // 위치 설정
         CanvasSlot->SetPosition(Position);
-        CanvasSlot->SetSize(FVector2D(80.0f, 80.0f)); // 기본 버튼 크기
+        CanvasSlot->SetSize(NodeButtonSize); // 버튼 사이즈
         CanvasSlot->SetAnchors(FAnchors(0.0f, 0.0f, 0.0f, 0.0f)); // 좌상단 기준
     }
 
@@ -455,6 +458,9 @@ void UMapUIWidget::DrawConnectionLines()
             continue;
         }
 
+        // 시작 노드의 중심점 계산
+        FVector2D StartCenter = UIInfo.Position2D + (NodeButtonSize * 0.5f);
+
         // 현재 노드에서 연결된 모든 노드로 선 그리기
         for (UMapNode* ConnectedNode : UIInfo.LinkedNode->ConnectedNodes)
         {
@@ -467,7 +473,10 @@ void UMapUIWidget::DrawConnectionLines()
             FVector2D EndPos = GetNodePosition(ConnectedNode);
             if (EndPos != FVector2D::ZeroVector)
             {
-                CreateRailBetweenNodes(UIInfo.Position2D, EndPos);
+                // 끝 노드의 중심점 계산
+                FVector2D EndCenter = EndPos + (NodeButtonSize * 0.5f);
+
+                CreateRailBetweenNodes(StartCenter, EndCenter);
             }
         }
     }

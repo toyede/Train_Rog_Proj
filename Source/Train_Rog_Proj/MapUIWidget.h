@@ -77,6 +77,9 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Layout")
     int32 MaxRowsPerDepth; // 각 깊이당 최대 행 수 (기본 6)
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Layout")
+    FVector2D NodeButtonSize; // 노드 버튼 크기 (픽셀)
+
 
     // 노드 버튼 블루프린트 클래스들 (아트팀 디자인)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Node Art Assets")
